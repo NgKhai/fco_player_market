@@ -137,6 +137,7 @@ createApp({
   },
   mounted() {
     this.checkGarenaStatus();
+    this.loadSavedSquad();
     this.fetchPlayersBySeason('icontm');
   },
   methods: {
@@ -285,11 +286,13 @@ createApp({
       const next = this.builderSlots.find(s => !this.builderAssignments[s.id]);
       this.selectedSlotId = next ? next.id : null;
       this.playerPickerOpen = false;
+      this.persistSquad();
     },
     removeBuilderPlayer(slotId) {
       delete this.builderAssignments[slotId];
       this.selectedSlotId = slotId;
       this.playerPickerOpen = false;
+      this.persistSquad();
     },
     changeBuilderFormation(id) {
       const old = Object.values(this.builderAssignments).filter(Boolean);
@@ -297,6 +300,7 @@ createApp({
       this.builderAssignments = {};
       this.builderSlots.forEach((slot, index) => { if (old[index]) this.builderAssignments[slot.id] = old[index]; });
       this.selectedSlotId = null;
+      this.persistSquad();
     },
     dragBuilderStart(slotId) { this.draggedSlotId = slotId; },
     dropBuilderSlot(targetId) {
@@ -306,6 +310,28 @@ createApp({
       if (from) this.builderAssignments[targetId] = from; else delete this.builderAssignments[targetId];
       if (to) this.builderAssignments[this.draggedSlotId] = to; else delete this.builderAssignments[this.draggedSlotId];
       this.draggedSlotId = null;
+      this.persistSquad();
+    },
+    persistSquad() {
+      localStorage.setItem('fco-squad', JSON.stringify({
+        formation: this.builderFormationId,
+        assignments: this.builderAssignments,
+      }));
+    },
+    loadSavedSquad() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('fco-squad') || 'null');
+        if (!saved || !this.formations[saved.formation] || !saved.assignments) return;
+        this.builderFormationId = saved.formation;
+        this.builderAssignments = saved.assignments;
+      } catch (_) {
+        localStorage.removeItem('fco-squad');
+      }
+    },
+    clearBuilder() {
+      this.builderAssignments = {};
+      this.selectedSlotId = null;
+      localStorage.removeItem('fco-squad');
     },
     async handleSearch() {
       const q = this.searchQuery.trim();
@@ -351,17 +377,14 @@ createApp({
       }
     },
     getMinifaceUrl(player) {
-      if (!player) return 'https://s1.fifaaddict.com/assets/img/blank.png';
+      if (!player) return '';
       if (player.id || player.spid) {
         return `/minifaces/action/p${player.spid || player.id}.png`;
       }
-      if (player.uid) {
-        return `/remote-minifaces/${encodeURIComponent(player.uid)}.png`;
-      }
-      return 'https://s1.fifaaddict.com/assets/img/blank.png';
+      return '';
     },
     handleImageError(e) {
-      e.target.src = 'https://s1.fifaaddict.com/assets/img/blank.png';
+      e.target.style.visibility = 'hidden';
     },
     getPositionBadgeColor(pos) {
       pos = (pos || '').toUpperCase();

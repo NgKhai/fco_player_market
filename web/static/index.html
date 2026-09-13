@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FC Online Database & TTCN - Tra Cứu Cầu Thủ & Giá Live VN</title>
+  <title>FC Online Database & TTCN - Dữ liệu Database Local</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Vue 3 -->
@@ -61,18 +61,17 @@
           </form>
         </div>
 
-        <!-- GARENA VN SERVER STATUS & CONFIG BUTTON -->
+        <!-- LOCAL DATABASE STATUS -->
         <div class="flex items-center gap-3 text-xs">
-          <button 
-            @click="showTokenModal = true"
+          <div
             :class="garenaConnected ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/20 shadow-emerald-500/10' : 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500/20 shadow-amber-500/10'"
             class="flex items-center gap-2 px-3.5 py-2 rounded-xl border transition-all shadow-md"
           >
             <span class="w-2.5 h-2.5 rounded-full" :class="garenaConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
             <span class="font-bold font-['Rajdhani'] text-sm tracking-wide">
-              {{ garenaConnected ? '🇻🇳 Server VN (Đã Đăng Nhập)' : '🔐 Đăng Nhập Garena VN' }}
+              💾 DATABASE LOCAL
             </span>
-          </button>
+          </div>
         </div>
 
       </div>
@@ -119,7 +118,10 @@
                 </div>
               </div>
             </div>
-            <button @click="builderAssignments = {}; selectedSlotId = null" class="px-3 py-2 rounded-lg bg-rose-500/10 text-rose-300 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/20">Reset</button>
+            <div class="flex gap-2">
+              <button @click="persistSquad" class="px-3 py-2 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500/20">Lưu đội hình</button>
+              <button @click="clearBuilder" class="px-3 py-2 rounded-lg bg-rose-500/10 text-rose-300 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/20">Reset</button>
+            </div>
           </div>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_330px] gap-3">
@@ -221,7 +223,7 @@
       <div v-if="loading" class="flex flex-col items-center justify-center py-20 text-center">
         <div class="w-14 h-14 border-4 border-amber-400/20 border-t-amber-400 rounded-full animate-spin mb-4"></div>
         <div class="text-base font-bold text-slate-200">Đang tải dữ liệu cầu thủ & giá TTCN...</div>
-        <div class="text-xs text-slate-400 mt-1">Đang đồng bộ trực tuyến với máy chủ</div>
+        <div class="text-xs text-slate-400 mt-1">Đang đọc dữ liệu từ SQLite local</div>
       </div>
 
       <!-- EMPTY STATE -->
@@ -296,8 +298,8 @@
               <span class="text-amber-400 text-[10px] font-bold">
                 {{ '★'.repeat(parseInt(p.skill_level || 1)) }}
               </span>
-              <span v-if="p.pricekr && p.pricekr !== '0' && p.pricekr !== '-'" class="font-bold text-emerald-400 text-[11px] font-mono">
-                {{ p.pricekr }}
+              <span v-if="p.price && p.price !== '0' && p.price !== '-'" class="font-bold text-emerald-400 text-[11px] font-mono">
+                {{ p.price }}
               </span>
               <span v-else class="text-slate-500 text-[11px]">
                 Xem giá
@@ -548,12 +550,7 @@
               <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
                 <h3 class="text-base font-bold font-['Rajdhani'] flex items-center gap-2">
                   <i class="fa-solid fa-coins text-amber-400"></i>
-                  <span v-if="modalData.price_vn" class="text-emerald-400 font-bold">
-                    🇻🇳 BẢNG GIÁ TTCN SERVER VIỆT NAM (GARENA)
-                  </span>
-                  <span v-else class="text-amber-400 font-bold">
-                    🇰🇷 BẢNG GIÁ TTCN SERVER HÀN QUỐC (THAM CHIẾU)
-                  </span>
+                  <span class="text-emerald-400 font-bold">💾 GIÁ TTCN TỪ DATABASE LOCAL</span>
                 </h3>
                 <span class="text-[11px] text-slate-400 font-mono">
                   {{ modalData.price_vn ? modalData.price_vn.source : ('Cập nhật: ' + (modalData.price?.updatetime || 'Hôm nay')) }}
@@ -573,7 +570,7 @@
                     <span class="px-1.5 py-0.2 rounded font-bold" :class="getGradeBadgeClass(lvl)">+{{ lvl }}</span>
                   </div>
                   <div class="text-xs font-bold font-mono mt-1.5 truncate">
-                    {{ (modalData.price_vn ? modalData.price_vn['vn' + lvl] : modalData.price?.['kr' + lvl]) || '-' }}
+                  {{ modalData.price?.[lvl] || '-' }}
                   </div>
                   <div class="text-[9px] text-slate-400 font-medium mt-0.5">BP</div>
                 </div>
@@ -615,7 +612,7 @@
     <footer class="bg-[#0e121a] border-t border-slate-800/80 py-4 mt-auto">
       <div class="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-4">
         <div>
-          © 2026 FC Online Extractor & TTCN Tool. Dữ liệu thời gian thực được kết nối từ Garena VN, Nexon & FIFAAddict.
+          © 2026 FC Online Database & TTCN Tool. Dữ liệu được đọc từ SQLite local.
         </div>
         <div class="flex items-center gap-4">
           <span><i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Trạng thái: Hoạt động bình thường</span>

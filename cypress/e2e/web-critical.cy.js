@@ -1,6 +1,19 @@
 describe('FC Online web critical flows', () => {
   beforeEach(() => {
+    cy.intercept('GET', '**/api/players/search*', {
+      statusCode: 200,
+      body: {
+        status: 'success',
+        total: 3,
+        data: [
+          { id: 1001, spid: 1001, uid: '1', name: 'Pelé', pos: 'ST', pos1: 'ST', attrA: 10, attrB: 95 },
+          { id: 1002, spid: 1002, uid: '2', name: 'Nguyễn Văn A', pos: 'GK', pos1: 'GK', attrA: 8, attrB: 90 },
+          { id: 1003, spid: 1003, uid: '3', name: 'Lionel Messi', pos: 'RW', pos1: 'RW', attrA: 12, attrB: 94 }
+        ]
+      }
+    }).as('playerSearch');
     cy.visit('/?builder=1');
+    cy.wait('@playerSearch');
   });
 
   it('loads the player database', () => {
@@ -33,11 +46,14 @@ describe('FC Online web critical flows', () => {
     cy.contains('Chi tiết cầu thủ & Bảng giá Live').should('not.exist');
   });
 
-  it('validates empty Garena login', () => {
-    cy.contains('button', 'Đăng Nhập Garena VN').click();
-    cy.contains('KẾT NỐI MÁY CHỦ GARENA VIỆT NAM').should('be.visible');
-    cy.contains('button', 'Đăng nhập & Tự động kết nối').click();
-    cy.contains('Vui lòng nhập tài khoản và mật khẩu Garena!').should('be.visible');
+  it('uses the local database as the data source', () => {
+    cy.contains('DATABASE LOCAL').should('be.visible');
+    cy.contains('button', 'Đăng Nhập Garena VN').should('not.exist');
+  });
+
+  it('serves a local miniface asset through Laravel', () => {
+    cy.request('/minifaces/action/p100000041.png')
+      .its('status').should('eq', 200);
   });
 
   it('changes formation and keeps the builder slot count', () => {

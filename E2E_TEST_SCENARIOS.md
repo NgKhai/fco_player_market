@@ -38,7 +38,7 @@ npx cypress run --spec cypress/e2e/web-critical.cy.js --browser electron
 
 | Run date | Spec | Result | Pass/Fail |
 |---|---|---|---|
-| 2026-09-13 | `squad-builder.cy.js` | Formation picker và suggest đúng vị trí GK | PASS (2/2) |
-| 2026-09-13 | `web-critical.cy.js` | Database, search, filter, sort, detail, auth, formation, assignment/reset | PASS (8/8) |
+| 2026-09-13 | `squad-builder.cy.js` | Formation picker, suggest đúng vị trí GK, lưu/khôi phục đội hình | PASS (3/3) |
+| 2026-09-13 | `web-critical.cy.js` | Database, search, filter, sort, detail, local source, miniface, formation, assignment/reset | PASS (9/9) |
 
-**Tổng kết:** PASS — 10/10 test tự động, 0 failure.
+**Tổng kết:** PASS — 12/12 test tự động, 0 failure.

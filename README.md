@@ -57,4 +57,4 @@ Muốn mở giao diện Cypress để debug:
 npm run test:e2e:open
 ```
 
-Cấu hình nằm ở `cypress.config.js`, test ở `cypress/e2e/`. Server Laravel phải chạy tại `http://127.0.0.1:8000`.
+Cấu hình nằm ở `cypress.config.js`, test ở `cypress/e2e/`. Server Laravel phải chạy tại `http://127.0.0.1:8080`.

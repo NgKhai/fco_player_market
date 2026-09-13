@@ -6,9 +6,9 @@ echo ======================================================================
 echo           ⚽ DANG KHOI CHAY LARAVEL FC ONLINE DATABASE & TTCN ⚽
 echo ======================================================================
 echo.
-echo [+] Dang mo trinh duyet tai: http://127.0.0.1:8000
+echo [+] Dang mo trinh duyet tai: http://127.0.0.1:8080
 echo.
-start http://127.0.0.1:8000
+start http://127.0.0.1:8080
 cd /d %~dp0backend
-php artisan serve --host=127.0.0.1 --port=8000
+php artisan serve --host=127.0.0.1 --port=8080
 exit /b
