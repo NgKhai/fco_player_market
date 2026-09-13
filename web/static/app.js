@@ -10,6 +10,7 @@ createApp({
       players: [],
       builderResults: [],
       builderSearch: '',
+      builderSearchRequestId: 0,
       selectedSlotId: null,
       draggedSlotId: null,
       builderFormationId: '4-3-3',
@@ -282,6 +283,23 @@ createApp({
       this.selectedSlotId = slot.id;
       this.builderSearch = '';
       this.playerPickerOpen = true;
+    },
+    async searchBuilderPlayers() {
+      const q = this.builderSearch.trim();
+      const requestId = ++this.builderSearchRequestId;
+      if (q.length < 2) {
+        this.builderResults = this.players;
+        return;
+      }
+      try {
+        const res = await fetch(`/api/players/search?q=${encodeURIComponent(q)}`);
+        const json = await res.json();
+        if (requestId === this.builderSearchRequestId && json.status === 'success') {
+          this.builderResults = json.data || [];
+        }
+      } catch (err) {
+        if (requestId === this.builderSearchRequestId) console.error('Builder search error:', err);
+      }
     },
     addBuilderPlayer(player) {
       if (!this.selectedSlotId) return;

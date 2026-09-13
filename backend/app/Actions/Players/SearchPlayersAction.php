@@ -22,6 +22,8 @@ final class SearchPlayersAction
                         'id' => $row->uid, 'uid' => $row->uid, 'spid' => null, 'pid' => null,
                         'name' => $row->name_vi ?: ($data['name'] ?? $row->uid),
                         'year' => $row->season_code, 'year_short' => $row->season_code,
+                        'season_full' => $data['season_full'] ?? ($data['team_name'] ?? $row->season_code),
+                        'team_name' => $data['team_name'] ?? null,
                         'season_id' => (int) ($data['year'] ?? 0),
                         'pos' => $data['pos1'] ?? '-', 'pos1' => $data['pos1'] ?? '-',
                         'pos2' => $data['pos2'] ?? null, 'attrA' => (int) ($data['salary'] ?? 0),

@@ -147,11 +147,11 @@
           <div v-if="playerPickerOpen" class="formation-backdrop fixed inset-0 z-40 flex items-start justify-center p-4 sm:p-10" @click.self="playerPickerOpen = false">
             <div class="formation-picker player-picker w-full max-w-lg rounded-xl p-4 shadow-2xl">
               <div class="flex items-center justify-between mb-3"><h2 class="text-base font-black text-white">CHỌN CẦU THỦ · {{ selectedSlotId ? (builderSlots.find(s => s.id === selectedSlotId)?.position || '') : '' }}</h2><button @click="playerPickerOpen = false" class="text-slate-400 hover:text-white text-xl leading-none">×</button></div>
-              <input v-model="builderSearch" placeholder="Tìm tên hoặc SPID..." class="w-full bg-[#181d2a] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-amber-400 mb-2">
+              <input v-model="builderSearch" @input="searchBuilderPlayers" placeholder="Tìm tên hoặc SPID..." class="w-full bg-[#181d2a] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-amber-400 mb-2">
               <div class="max-h-[60vh] overflow-y-auto space-y-2 pr-1">
                 <button v-for="p in builderPlayers" :key="p.uid || p.spid || p.id" @click="addBuilderPlayer(p)" class="w-full flex items-center gap-2 rounded-xl border border-slate-800 bg-[#0e121a] p-2 text-left hover:border-amber-400/60 hover:bg-amber-500/10 transition-colors">
-                  <img :src="getMinifaceUrl(p)" :alt="p.name" class="w-12 h-14 object-contain" @error="handleImageError">
-                  <span class="min-w-0 flex-1"><b class="block text-xs text-slate-100 truncate">{{ p.name }}</b><small class="text-[10px] text-slate-400">{{ p.pos1 || p.pos }} · OVR {{ p.pos1val || p.attrB || '-' }}</small></span><i class="fa-solid fa-plus text-amber-400"></i>
+                  <div class="relative shrink-0"><img :src="getMinifaceUrl(p)" :alt="p.name" class="w-12 h-14 object-contain" @error="handleImageError"><img v-if="getSeasonImageUrl(p)" :src="getSeasonImageUrl(p)" alt="" class="absolute -top-1 -right-1 w-6 h-6 object-contain" @error="markSeasonImageError(p)"></div>
+                  <span class="min-w-0 flex-1"><b class="block text-xs text-slate-100 truncate">{{ p.name }}</b><small class="block text-[10px] text-amber-300 truncate">{{ p.season_full || p.team_name || p.year_short || p.year || 'FO4' }}</small><small class="block text-[10px] text-slate-400">{{ p.pos1 || p.pos }} · OVR {{ p.pos1val || p.attrB || '-' }} · Lương {{ p.attrA || p.salary || '-' }} · {{ p.foot_left || 5 }}-{{ p.foot_right || 5 }}</small></span><i class="fa-solid fa-plus text-amber-400"></i>
                 </button>
                 <p v-if="!builderPlayers.length" class="text-center text-xs text-slate-500 py-10">Không có kết quả.</p>
               </div>
@@ -159,11 +159,11 @@
           </div>
           <aside class="builder-panel rounded-2xl border border-slate-700/80 bg-[#121620] p-3 flex flex-col min-h-[620px] lg:min-h-[700px]">
             <div class="flex items-center justify-between mb-3"><h2 class="font-bold text-slate-100">Chọn cầu thủ</h2><span class="text-[10px] text-slate-500">{{ selectedSlotId ? (builderSlots.find(s => s.id === selectedSlotId)?.position || '') : 'Chọn slot' }}</span></div>
-            <input v-model="builderSearch" placeholder="Tìm tên hoặc SPID..." class="w-full bg-[#181d2a] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-amber-400 mb-2">
+            <input v-model="builderSearch" @input="searchBuilderPlayers" placeholder="Tìm tên hoặc SPID..." class="w-full bg-[#181d2a] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-amber-400 mb-2">
             <div class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[500px]">
               <button v-for="p in builderPlayers" :key="p.uid || p.spid || p.id" @click="addBuilderPlayer(p)" class="w-full flex items-center gap-2 rounded-xl border border-slate-800 bg-[#0e121a] p-2 text-left hover:border-amber-400/60 hover:bg-amber-500/10 transition-colors">
-                <img :src="getMinifaceUrl(p)" :alt="p.name" class="w-12 h-14 object-contain" @error="handleImageError">
-                <span class="min-w-0 flex-1"><b class="block text-xs text-slate-100 truncate">{{ p.name }}</b><small class="text-[10px] text-slate-400">{{ p.pos1 || p.pos }} · OVR {{ p.pos1val || p.attrB || '-' }}</small></span>
+                <div class="relative shrink-0"><img :src="getMinifaceUrl(p)" :alt="p.name" class="w-12 h-14 object-contain" @error="handleImageError"><img v-if="getSeasonImageUrl(p)" :src="getSeasonImageUrl(p)" alt="" class="absolute -top-1 -right-1 w-6 h-6 object-contain" @error="markSeasonImageError(p)"></div>
+                <span class="min-w-0 flex-1"><b class="block text-xs text-slate-100 truncate">{{ p.name }}</b><small class="block text-[10px] text-amber-300 truncate">{{ p.season_full || p.team_name || p.year_short || p.year || 'FO4' }}</small><small class="block text-[10px] text-slate-400">{{ p.pos1 || p.pos }} · OVR {{ p.pos1val || p.attrB || '-' }} · Lương {{ p.attrA || p.salary || '-' }} · {{ p.foot_left || 5 }}-{{ p.foot_right || 5 }}</small></span>
                 <i class="fa-solid fa-plus text-amber-400"></i>
               </button>
               <p v-if="!builderPlayers.length" class="text-center text-xs text-slate-500 py-10">Không có kết quả trong danh sách hiện tại.</p>
