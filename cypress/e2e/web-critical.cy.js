@@ -74,7 +74,18 @@ describe('FC Online web critical flows', () => {
 
   it('uses the local database as the data source', () => {
     cy.contains('DATABASE LOCAL').should('be.visible');
-    cy.contains('button', 'Đăng Nhập Garena VN').should('not.exist');
+    cy.contains('button', 'Đăng Nhập Garena VN').should('be.visible');
+  });
+
+  it('shows player search failures with a retry action', () => {
+    cy.intercept('GET', '**/api/players/search*', {
+      statusCode: 500,
+      body: { status: 'error', message: 'temporary failure' },
+    }).as('failedSearch');
+    cy.visit('/?builder=1');
+    cy.wait('@failedSearch');
+    cy.contains('Không thể tải dữ liệu cầu thủ.').should('be.visible');
+    cy.contains('button', 'Thử lại').should('be.visible');
   });
 
   it('serves a local miniface asset through Laravel', () => {

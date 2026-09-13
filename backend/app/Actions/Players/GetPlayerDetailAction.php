@@ -56,10 +56,12 @@ final class GetPlayerDetailAction
             : [];
         $livePrices = $this->garena->playerPrices((int) $row->spid);
         $priceVn = $livePrices;
-        if ($livePrices !== null) $prices = array_combine(
-            array_map(fn (string $key): string => (string) ((int) substr($key, 2)), array_keys($livePrices)),
-            array_values($livePrices),
-        );
+        if ($livePrices !== null) {
+            $prices = [];
+            foreach ($livePrices as $key => $value) {
+                if (preg_match('/^vn(\d+)$/', (string) $key, $match)) $prices[$match[1]] = $value;
+            }
+        }
 
         return [
             'db' => $db, 'price' => $prices, 'price_vn' => $priceVn, 'traits' => [], 'source' => 'SQLite local',

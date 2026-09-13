@@ -74,6 +74,7 @@ createApp({
       ],
       formations: Object.fromEntries(Object.entries(FORMATION_LINES).map(([id, lines]) => [id, createFormationSlots(lines)])),
       loading: false,
+      playerRequestError: '',
       selectedPlayerDetail: null,
       modalData: {},
       playerDetailError: '',
@@ -87,6 +88,7 @@ createApp({
       seasonImageErrors: {},
       garenaConnected: false,
       garenaTokenInput: '',
+      garenaUidInput: '',
       popularSeasons: [
         { name: 'ICON The Moment', code: 'icontm' },
         { name: 'Eternal Legends (EL)', code: 'el' },
@@ -195,6 +197,7 @@ createApp({
         const json = await res.json();
         if (json.status === 'success') {
           this.garenaConnected = json.connected;
+          this.garenaUidInput = json.uid || '';
         }
       } catch (err) {
         console.error('Garena status error:', err);
@@ -243,6 +246,7 @@ createApp({
         this.garenaConnected = false;
         this.loginUsername = '';
         this.loginPassword = '';
+        this.garenaUidInput = '';
         this.authMessage = 'Đã đăng xuất tài khoản Garena.';
         this.authMessageType = 'success';
         setTimeout(() => {
@@ -262,13 +266,17 @@ createApp({
         const res = await fetch('/api/garena/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: this.garenaTokenInput.trim() })
+            body: JSON.stringify({ token: this.garenaTokenInput.trim(), uid: this.garenaUidInput.trim() })
         });
         const json = await res.json();
         if (json.status === 'success') {
           this.garenaConnected = true;
+          this.authMessage = '';
           this.showTokenModal = false;
           alert('✅ Đã lưu token Garena VN thành công!');
+        } else {
+          this.authMessage = json.message || 'Token Garena không hợp lệ.';
+          this.authMessageType = 'error';
         }
       } catch (err) {
         alert('Lỗi kết nối: ' + err.message);
@@ -276,17 +284,18 @@ createApp({
     },
     async fetchPlayersBySeason(seasonCode) {
       this.loading = true;
+      this.playerRequestError = '';
       this.selectedSeason = seasonCode;
       this.searchQuery = '';
       try {
         const res = await fetch(`/api/players/search?season=${encodeURIComponent(seasonCode)}`);
         const json = await res.json();
-        if (json.status === 'success') {
-          this.players = json.data || [];
-          this.builderResults = this.players;
-        }
+        if (!res.ok || json.status !== 'success') throw new Error(json.message || 'request failed');
+        this.players = json.data || [];
+        this.builderResults = this.players;
       } catch (err) {
         console.error('Fetch error:', err);
+        this.playerRequestError = 'Không thể tải dữ liệu cầu thủ.';
       } finally {
         this.loading = false;
       }
@@ -467,18 +476,22 @@ createApp({
         return;
       }
       this.loading = true;
+      this.playerRequestError = '';
       this.selectedSeason = '';
       try {
         const res = await fetch(`/api/players/search?q=${encodeURIComponent(q)}`);
         const json = await res.json();
-        if (json.status === 'success') {
-          this.players = json.data || [];
-        }
+        if (!res.ok || json.status !== 'success') throw new Error(json.message || 'request failed');
+        this.players = json.data || [];
       } catch (err) {
         console.error('Search error:', err);
+        this.playerRequestError = 'Không thể tải dữ liệu cầu thủ.';
       } finally {
         this.loading = false;
       }
+    },
+    retryPlayerRequest() {
+      return this.searchQuery.trim() ? this.handleSearch() : this.fetchPlayersBySeason(this.selectedSeason || 'icontm');
     },
     selectSeason(code) {
       this.fetchPlayersBySeason(code);
