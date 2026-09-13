@@ -1,0 +1,630 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FC Online Database & TTCN - Tra Cứu Cầu Thủ & Giá Live VN</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#0b0e14] text-slate-200 font-['Roboto'] min-h-screen flex flex-col selection:bg-amber-500 selection:text-black">
+
+  <div id="app" class="flex-1 flex flex-col" v-cloak>
+    <!-- TOP HEADER -->
+    <header class="bg-[#121620]/90 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-40">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+        
+        <!-- Logo -->
+        <div class="flex items-center gap-3 cursor-pointer" @click="resetToHome">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 text-black font-black text-xl font-['Rajdhani']">
+            FC
+          </div>
+          <div>
+            <div class="text-xl font-bold font-['Rajdhani'] tracking-wider bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500 bg-clip-text text-transparent">
+              FC ONLINE DB
+            </div>
+            <div class="text-[11px] text-slate-400 font-medium -mt-1 tracking-wider uppercase">
+              Database & Live TTCN Tool
+            </div>
+          </div>
+        </div>
+
+        <!-- SEARCH BAR -->
+        <div class="flex-1 max-w-2xl">
+          <form @submit.prevent="handleSearch" class="relative flex items-center">
+            <div class="absolute left-3.5 text-slate-400">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <input 
+              type="text" 
+              v-model="searchQuery" 
+              placeholder="Nhập tên cầu thủ (ví dụ: Ronaldo, Messi, Son, Gullit, Pele, Zidane...)"
+              class="w-full bg-[#181d2a] border border-slate-700/70 rounded-xl pl-10 pr-24 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all shadow-inner"
+            >
+            <button 
+              type="submit"
+              :disabled="loading"
+              class="absolute right-1.5 px-4 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs rounded-lg transition-all shadow-md active:scale-95 disabled:opacity-50"
+            >
+              <span v-if="!loading"><i class="fa-solid fa-bolt mr-1"></i> Tìm kiếm</span>
+              <span v-else><i class="fa-solid fa-spinner fa-spin"></i> Đang tải</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- GARENA VN SERVER STATUS & CONFIG BUTTON -->
+        <div class="flex items-center gap-3 text-xs">
+          <button 
+            @click="showTokenModal = true"
+            :class="garenaConnected ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/20 shadow-emerald-500/10' : 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500/20 shadow-amber-500/10'"
+            class="flex items-center gap-2 px-3.5 py-2 rounded-xl border transition-all shadow-md"
+          >
+            <span class="w-2.5 h-2.5 rounded-full" :class="garenaConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
+            <span class="font-bold font-['Rajdhani'] text-sm tracking-wide">
+              {{ garenaConnected ? '🇻🇳 Server VN (Đã Đăng Nhập)' : '🔐 Đăng Nhập Garena VN' }}
+            </span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- SEASON PILLS BAR -->
+      <div class="border-t border-slate-800/60 bg-[#0e121a]/80 px-4 py-2">
+        <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+          <span class="text-[11px] font-bold text-amber-400/90 uppercase tracking-wider whitespace-nowrap mr-1">
+            <i class="fa-solid fa-trophy mr-1"></i> Mùa thẻ hot:
+          </span>
+          <button 
+            v-for="s in popularSeasons" 
+            :key="s.code"
+            @click="selectSeason(s.code)"
+            :class="selectedSeason === s.code && !searchQuery ? 'bg-amber-500 text-black font-bold border-amber-400 shadow-md shadow-amber-500/20' : 'bg-[#181d2a] text-slate-300 hover:text-white hover:bg-slate-800 border-slate-700/60'"
+            class="px-3 py-1 rounded-lg text-xs font-medium border transition-all whitespace-nowrap"
+          >
+            {{ s.name }}
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+
+      <!-- SQUAD BUILDER -->
+      <section class="builder-shell mb-8">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3 px-1">
+          <div>
+            <h1 class="text-2xl font-black font-['Rajdhani'] text-white">Squad Builder <span class="text-amber-400">FC Online</span></h1>
+            <p class="text-xs text-slate-400">Xếp đội hình, thử vị trí và kiểm tra tổng OVR/lương trước khi mua cầu thủ.</p>
+          </div>
+          <div class="relative flex items-center gap-2">
+            <button @click="formationPickerOpen = !formationPickerOpen" class="formation-toggle px-3 py-2 rounded-lg text-xs font-black text-amber-100">⌃ FORMATIONS {{ builderFormationId }}</button>
+            <div v-if="formationPickerOpen" class="formation-backdrop fixed inset-0 z-40 flex items-start justify-center p-4 sm:p-10" @click.self="formationPickerOpen = false">
+              <div class="formation-picker w-full max-w-3xl rounded-xl p-4 shadow-2xl">
+                <div class="flex items-center justify-between mb-3"><h2 class="text-base font-black text-white">FORMATIONS {{ builderFormationId }}</h2><button @click="formationPickerOpen = false" class="text-slate-400 hover:text-white text-xl leading-none">×</button></div>
+                <div v-for="group in formationGroups" :key="group.title" class="mb-3 last:mb-0">
+                  <h3 class="formation-group-title mb-2 text-xs font-black">{{ group.title }}</h3>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">
+                    <button v-for="formation in group.items" :key="formation" @click="changeBuilderFormation(formation); formationPickerOpen = false" :class="builderFormationId === formation ? 'formation-active' : ''" class="formation-option rounded-md px-2 py-1.5 text-left text-xs font-bold">{{ formation }}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button @click="builderAssignments = {}; selectedSlotId = null" class="px-3 py-2 rounded-lg bg-rose-500/10 text-rose-300 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/20">Reset</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_330px] gap-3">
+          <div class="builder-pitch relative rounded-2xl border border-slate-700/80 overflow-hidden min-h-[620px] lg:min-h-[700px]">
+            <div class="pitch-lines absolute inset-0"></div>
+            <div v-for="slot in builderSlots" :key="slot.id" class="builder-slot absolute -translate-x-1/2 -translate-y-1/2" :style="{left: slot.x + '%', top: slot.y + '%'}" @dragover.prevent @drop="dropBuilderSlot(slot.id)">
+              <div v-if="getBuilderPlayer(slot.id)" draggable="true" @dragstart="dragBuilderStart(slot.id)" @click="selectBuilderSlot(slot)" :class="selectedSlotId === slot.id ? 'ring-2 ring-amber-400' : ''" class="builder-player-card cursor-grab active:cursor-grabbing rounded-xl bg-[#121827] border border-amber-400/40 p-1.5 w-[76px] sm:w-[92px] shadow-xl">
+                <img :src="getMinifaceUrl(getBuilderPlayer(slot.id))" :alt="getBuilderPlayer(slot.id).name" class="w-full h-20 sm:h-24 object-contain" @error="handleImageError">
+                <div class="text-[10px] font-black text-center text-white truncate">{{ getBuilderPlayer(slot.id).name }}</div>
+                <div class="text-[10px] text-center text-amber-300 font-bold">{{ getBuilderPlayer(slot.id).pos1val || getBuilderPlayer(slot.id).attrB || '-' }} · {{ slot.position }}</div>
+              </div>
+              <button v-else @click="selectBuilderSlot(slot)" :class="selectedSlotId === slot.id ? 'border-amber-400 bg-amber-400/15 text-amber-300' : 'border-slate-500 bg-slate-900/80 text-slate-400'" class="builder-empty w-[68px] h-[92px] sm:w-[82px] sm:h-[108px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center hover:border-amber-400 hover:text-amber-300 transition-colors">
+                <i class="fa-solid fa-plus text-lg mb-1"></i><span class="text-[10px] font-black">{{ slot.position }}</span>
+              </button>
+            </div>
+            <div class="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#0b0e14]/85 border border-slate-700 px-3 py-2 text-xs">
+              <span>Đã chọn <b class="text-amber-400">{{ builderSquadPlayers.length }}/11</b></span>
+              <span>OVR <b class="text-white">{{ builderAverageOvr || '-' }}</b></span>
+              <span>Lương <b class="text-white">{{ builderTotalSalary || '-' }}</b></span>
+              <span v-if="builderPositionWarnings" class="text-rose-300"><i class="fa-solid fa-triangle-exclamation"></i> {{ builderPositionWarnings }} lệch vị trí</span>
+            </div>
+          </div>
+          <div v-if="playerPickerOpen" class="formation-backdrop fixed inset-0 z-40 flex items-start justify-center p-4 sm:p-10" @click.self="playerPickerOpen = false">
+            <div class="formation-picker player-picker w-full max-w-lg rounded-xl p-4 shadow-2xl">
+              <div class="flex items-center justify-between mb-3"><h2 class="text-base font-black text-white">CHỌN CẦU THỦ · {{ selectedSlotId ? (builderSlots.find(s => s.id === selectedSlotId)?.position || '') : '' }}</h2><button @click="playerPickerOpen = false" class="text-slate-400 hover:text-white text-xl leading-none">×</button></div>
+              <input v-model="builderSearch" placeholder="Tìm tên hoặc SPID..." class="w-full bg-[#181d2a] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-amber-400 mb-2">
+              <div class="max-h-[60vh] overflow-y-auto space-y-2 pr-1">
+                <button v-for="p in builderPlayers" :key="p.uid || p.spid || p.id" @click="addBuilderPlayer(p)" class="w-full flex items-center gap-2 rounded-xl border border-slate-800 bg-[#0e121a] p-2 text-left hover:border-amber-400/60 hover:bg-amber-500/10 transition-colors">
+                  <img :src="getMinifaceUrl(p)" :alt="p.name" class="w-12 h-14 object-contain" @error="handleImageError">
+                  <span class="min-w-0 flex-1"><b class="block text-xs text-slate-100 truncate">{{ p.name }}</b><small class="text-[10px] text-slate-400">{{ p.pos1 || p.pos }} · OVR {{ p.pos1val || p.attrB || '-' }}</small></span><i class="fa-solid fa-plus text-amber-400"></i>
+                </button>
+                <p v-if="!builderPlayers.length" class="text-center text-xs text-slate-500 py-10">Không có kết quả.</p>
+              </div>
+            </div>
+          </div>
+          <aside class="builder-panel rounded-2xl border border-slate-700/80 bg-[#121620] p-3 flex flex-col min-h-[620px] lg:min-h-[700px]">
+            <div class="flex items-center justify-between mb-3"><h2 class="font-bold text-slate-100">Chọn cầu thủ</h2><span class="text-[10px] text-slate-500">{{ selectedSlotId ? (builderSlots.find(s => s.id === selectedSlotId)?.position || '') : 'Chọn slot' }}</span></div>
+            <input v-model="builderSearch" placeholder="Tìm tên hoặc SPID..." class="w-full bg-[#181d2a] border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-amber-400 mb-2">
+            <div class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[500px]">
+              <button v-for="p in builderPlayers" :key="p.uid || p.spid || p.id" @click="addBuilderPlayer(p)" class="w-full flex items-center gap-2 rounded-xl border border-slate-800 bg-[#0e121a] p-2 text-left hover:border-amber-400/60 hover:bg-amber-500/10 transition-colors">
+                <img :src="getMinifaceUrl(p)" :alt="p.name" class="w-12 h-14 object-contain" @error="handleImageError">
+                <span class="min-w-0 flex-1"><b class="block text-xs text-slate-100 truncate">{{ p.name }}</b><small class="text-[10px] text-slate-400">{{ p.pos1 || p.pos }} · OVR {{ p.pos1val || p.attrB || '-' }}</small></span>
+                <i class="fa-solid fa-plus text-amber-400"></i>
+              </button>
+              <p v-if="!builderPlayers.length" class="text-center text-xs text-slate-500 py-10">Không có kết quả trong danh sách hiện tại.</p>
+            </div>
+            <button v-if="selectedSlotId && getBuilderPlayer(selectedSlotId)" @click="removeBuilderPlayer(selectedSlotId)" class="mt-3 w-full rounded-lg border border-rose-500/30 bg-rose-500/10 py-2 text-xs font-bold text-rose-300 hover:bg-rose-500/20">Bỏ cầu thủ khỏi slot</button>
+          </aside>
+        </div>
+      </section>
+      
+      <!-- CONTROLS & FILTER BAR -->
+      <div class="bg-[#121620] border border-slate-800 rounded-2xl p-4 mb-6 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        
+        <!-- Positions Filter -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-xs font-semibold text-slate-400 mr-1"><i class="fa-solid fa-filter mr-1"></i> Vị trí:</span>
+          <button 
+            v-for="pos in positionsList" 
+            :key="pos"
+            @click="selectedPosition = pos"
+            :class="selectedPosition === pos ? 'bg-amber-500 text-black font-bold' : 'bg-[#1a202e] text-slate-300 hover:bg-slate-700'"
+            class="px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
+          >
+            {{ pos }}
+          </button>
+        </div>
+
+        <!-- Sort By -->
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-400 font-semibold"><i class="fa-solid fa-arrow-down-wide-short mr-1"></i> Sắp xếp:</span>
+          <select 
+            v-model="sortBy"
+            class="bg-[#181d2a] border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
+          >
+            <option value="ovr_desc">OVR Giảm dần</option>
+            <option value="salary_asc">Lương Tăng dần</option>
+            <option value="salary_desc">Lương Giảm dần</option>
+            <option value="name_asc">Tên (A-Z)</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- SEARCH RESULT SUMMARY -->
+      <div class="flex items-center justify-between mb-4 px-1">
+        <h2 class="text-lg font-bold font-['Rajdhani'] text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-users text-amber-400"></i>
+          <span v-if="searchQuery">Kết quả tìm kiếm cho "<span class="text-amber-400">{{ searchQuery }}</span>"</span>
+          <span v-else-if="selectedSeason">Danh sách cầu thủ mùa <span class="text-amber-400 uppercase">{{ selectedSeason }}</span></span>
+          <span v-else>Danh sách cầu thủ tiêu biểu</span>
+          <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-amber-400 font-bold border border-slate-700 font-mono">
+            {{ filteredPlayers.length }} thẻ
+          </span>
+        </h2>
+      </div>
+
+      <!-- LOADING STATE -->
+      <div v-if="loading" class="flex flex-col items-center justify-center py-20 text-center">
+        <div class="w-14 h-14 border-4 border-amber-400/20 border-t-amber-400 rounded-full animate-spin mb-4"></div>
+        <div class="text-base font-bold text-slate-200">Đang tải dữ liệu cầu thủ & giá TTCN...</div>
+        <div class="text-xs text-slate-400 mt-1">Đang đồng bộ trực tuyến với máy chủ</div>
+      </div>
+
+      <!-- EMPTY STATE -->
+      <div v-else-if="filteredPlayers.length === 0" class="bg-[#121620] border border-slate-800 rounded-2xl py-16 px-4 text-center">
+        <div class="w-16 h-16 rounded-full bg-slate-800/80 text-amber-400 flex items-center justify-center mx-auto mb-4 text-2xl">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-200 mb-1">Không tìm thấy cầu thủ phù hợp</h3>
+        <p class="text-sm text-slate-400 max-w-md mx-auto">
+          Hãy thử tìm kiếm với tên tiếng Anh, ví dụ: <b>Ronaldo, Messi, Son, Gullit, Pele, Zidane, Henry...</b>
+        </p>
+      </div>
+
+      <!-- PLAYERS GRID -->
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        
+        <div 
+          v-for="p in filteredPlayers" 
+          :key="p.uid"
+          @click="openPlayerDetail(p)"
+          class="fco-card group bg-gradient-to-b from-[#151a26] to-[#0e121a] hover:from-[#1c2333] hover:to-[#121722] border border-slate-800/90 hover:border-amber-400/60 rounded-2xl p-3.5 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between hover:shadow-xl hover:shadow-amber-500/10 hover:-translate-y-1"
+        >
+          <!-- Top Card Meta -->
+          <div class="flex items-start justify-between">
+            <div class="flex flex-col">
+              <span class="text-2xl font-black font-['Rajdhani'] leading-none text-white drop-shadow">
+                {{ p.pos1val || p.attrB || 100 }}
+              </span>
+              <span 
+                :class="getPositionBadgeColor(p.pos1 || p.pos)"
+                class="text-[11px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded mt-1 text-center"
+              >
+                {{ p.pos1 || p.pos || 'ST' }}
+              </span>
+            </div>
+
+            <!-- Season Badge -->
+            <div class="text-right">
+              <span class="text-[11px] font-extrabold px-2 py-0.5 bg-slate-800 text-amber-300 rounded border border-amber-400/30 uppercase tracking-wider">
+                {{ p.year_short || p.year || 'FO4' }}
+              </span>
+              <div class="text-[10px] text-slate-400 font-bold mt-1 flex items-center justify-end gap-1">
+                <span class="text-amber-400"><i class="fa-solid fa-coins"></i></span>
+                <span>{{ p.attrA || p.salary || '-' }} FP</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Player Miniface Avatar -->
+          <div class="my-2 flex justify-center items-center h-28 relative">
+            <div class="absolute w-20 h-20 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-400/20 transition-all"></div>
+            <img 
+              :src="getMinifaceUrl(p)" 
+              :alt="p.name"
+              loading="lazy"
+              @error="handleImageError"
+              class="h-28 object-contain z-10 transition-transform duration-300 group-hover:scale-105 drop-shadow-md"
+            >
+          </div>
+
+          <!-- Bottom Meta: Name & Quick Stats -->
+          <div>
+            <h3 class="text-center font-bold text-slate-100 text-sm truncate group-hover:text-amber-400 transition-colors">
+              {{ p.name }}
+            </h3>
+
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mt-2 px-1 pt-2 border-t border-slate-800/80">
+              <span class="flex items-center gap-1 font-mono">
+                <i class="fa-solid fa-shoe-prints text-[10px] text-slate-500"></i>
+                <span>{{ p.foot_left || 5 }}-{{ p.foot_right || 5 }}</span>
+              </span>
+              <span class="text-amber-400 text-[10px] font-bold">
+                {{ '★'.repeat(parseInt(p.skill_level || 1)) }}
+              </span>
+              <span v-if="p.pricekr && p.pricekr !== '0' && p.pricekr !== '-'" class="font-bold text-emerald-400 text-[11px] font-mono">
+                {{ p.pricekr }}
+              </span>
+              <span v-else class="text-slate-500 text-[11px]">
+                Xem giá
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- GARENA LOGIN & TOKEN CONFIG MODAL -->
+    <div 
+      v-if="showTokenModal" 
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-all animate-fade-in"
+      @click.self="showTokenModal = false"
+    >
+      <div class="bg-[#121622] border border-slate-700/80 rounded-3xl w-full max-w-lg p-6 shadow-2xl relative">
+        
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+          <div class="flex items-center gap-2 text-lg font-bold font-['Rajdhani'] text-amber-400">
+            <i class="fa-solid fa-shield-halved"></i>
+            KẾT NỐI MÁY CHỦ GARENA VIỆT NAM
+          </div>
+          <button 
+            @click="showTokenModal = false"
+            class="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- TABS SELECTOR -->
+        <div class="flex gap-2 p-1 bg-[#181d2a] rounded-xl border border-slate-800 mb-4">
+          <button 
+            @click="authTab = 'login'"
+            :class="authTab === 'login' ? 'bg-amber-500 text-black font-bold shadow-md' : 'text-slate-400 hover:text-white'"
+            class="flex-1 py-1.5 text-xs rounded-lg transition-all text-center flex items-center justify-center gap-1.5"
+          >
+            <i class="fa-solid fa-user-lock"></i> Đăng nhập Tài khoản
+          </button>
+          <button 
+            @click="authTab = 'token'"
+            :class="authTab === 'token' ? 'bg-amber-500 text-black font-bold shadow-md' : 'text-slate-400 hover:text-white'"
+            class="flex-1 py-1.5 text-xs rounded-lg transition-all text-center flex items-center justify-center gap-1.5"
+          >
+            <i class="fa-solid fa-key"></i> Dán Token Trực tiếp
+          </button>
+        </div>
+
+        <!-- TAB 1: AUTO LOGIN WITH USERNAME & PASSWORD -->
+        <div v-if="authTab === 'login'" class="space-y-3">
+          <div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 flex items-start gap-2 leading-relaxed">
+            <i class="fa-solid fa-circle-info mt-0.5"></i>
+            <span>Khuyên dùng <b>tài khoản phụ (clone / rác)</b> để đăng nhập lấy giá an toàn tuyệt đối.</span>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Tài khoản Garena (Username / Email):</label>
+            <input 
+              type="text" 
+              v-model="loginUsername"
+              placeholder="Nhập tên đăng nhập Garena..."
+              class="w-full bg-[#181d2a] border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400"
+            >
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Mật khẩu Garena:</label>
+            <input 
+              type="password" 
+              v-model="loginPassword"
+              placeholder="Nhập mật khẩu..."
+              class="w-full bg-[#181d2a] border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400"
+            >
+          </div>
+
+          <!-- Alert message -->
+          <div v-if="authMessage" :class="authMessageType === 'error' ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'" class="p-2.5 rounded-xl border text-xs font-semibold">
+            {{ authMessage }}
+          </div>
+
+          <div class="pt-2 flex items-center justify-between">
+            <button 
+              v-if="garenaConnected"
+              @click="handleLogout"
+              class="px-3.5 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold rounded-xl border border-rose-500/40"
+            >
+              Đăng xuất
+            </button>
+            <div class="ml-auto">
+              <button 
+                @click="handleAutoLogin"
+                :disabled="loginLoading"
+                class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-xs font-bold rounded-xl shadow-md shadow-amber-500/20 disabled:opacity-50 flex items-center gap-2"
+              >
+                <i v-if="loginLoading" class="fa-solid fa-spinner fa-spin"></i>
+                <span>{{ loginLoading ? 'Đang xác thực...' : 'Đăng nhập & Tự động kết nối' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: MANUAL TOKEN INPUT -->
+        <div v-if="authTab === 'token'" class="space-y-3">
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Dành cho tài khoản bật xác thực 2 lớp (OTP). Bạn có thể lấy <b>Session Token</b> từ trình duyệt hoặc app FC Online Mobile.
+          </p>
+
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Garena Session Token:</label>
+            <input 
+              type="password" 
+              v-model="garenaTokenInput"
+              placeholder="Dán sso_token hoặc Bearer token vào đây..."
+              class="w-full bg-[#181d2a] border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400"
+            >
+          </div>
+
+          <div class="pt-2 flex items-center justify-end gap-2">
+            <button 
+              @click="saveGarenaToken"
+              class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-xl shadow-md shadow-amber-500/20"
+            >
+              Lưu Token
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PLAYER DETAIL MODAL -->
+    <div 
+      v-if="selectedPlayerDetail" 
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-all animate-fade-in"
+      @click.self="selectedPlayerDetail = null"
+    >
+      <div class="bg-[#121622] border border-slate-700/80 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative flex flex-col">
+        
+        <!-- Modal Header -->
+        <div class="sticky top-0 bg-[#121622]/95 backdrop-blur-md px-6 py-4 border-b border-slate-800 flex items-center justify-between z-20">
+          <div class="flex items-center gap-3">
+            <span class="text-xs px-2.5 py-1 rounded bg-amber-500 text-black font-extrabold uppercase tracking-wider">
+              {{ modalData.db?.season_full || 'FC ONLINE' }}
+            </span>
+            <span class="text-slate-400 text-sm font-medium">Chi tiết cầu thủ & Bảng giá Live</span>
+          </div>
+          <button 
+            @click="selectedPlayerDetail = null"
+            class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-all"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Modal Body Content -->
+        <div class="p-6 grid grid-cols-1 md:grid-cols-12 gap-6">
+          
+          <!-- LEFT COL: Profile, Avatar, Physics -->
+          <div class="md:col-span-5 flex flex-col items-center bg-[#171d2b] border border-slate-800/80 rounded-2xl p-5 relative overflow-hidden">
+            
+            <div class="relative mb-3 flex flex-col items-center">
+              <div class="w-32 h-32 rounded-full bg-amber-500/10 blur-2xl absolute"></div>
+              <img 
+                :src="getMinifaceUrl(modalData.db)" 
+                class="h-36 object-contain z-10 drop-shadow-xl"
+                @error="handleImageError"
+              >
+            </div>
+
+            <h2 class="text-2xl font-black font-['Rajdhani'] text-white text-center">
+              {{ modalData.db?.name }}
+            </h2>
+            <div class="text-xs text-amber-400 font-bold uppercase tracking-wider mt-0.5">
+              {{ modalData.db?.season_full }} ({{ modalData.db?.season_name?.toUpperCase() }})
+            </div>
+
+            <!-- Basic stats pill row -->
+            <div class="grid grid-cols-3 gap-2 w-full mt-4 text-center">
+              <div class="bg-[#121622] p-2 rounded-xl border border-slate-800">
+                <div class="text-[10px] text-slate-400 uppercase font-bold">Chỉ số OVR</div>
+                <div class="text-xl font-black font-['Rajdhani'] text-amber-400 leading-tight">
+                  {{ modalData.db?.current_ovr || '-' }}
+                </div>
+              </div>
+              <div class="bg-[#121622] p-2 rounded-xl border border-slate-800">
+                <div class="text-[10px] text-slate-400 uppercase font-bold">Mức Lương</div>
+                <div class="text-xl font-black font-['Rajdhani'] text-white leading-tight">
+                  {{ modalData.db?.salary }} FP
+                </div>
+              </div>
+              <div class="bg-[#121622] p-2 rounded-xl border border-slate-800">
+                <div class="text-[10px] text-slate-400 uppercase font-bold">Vị Trí</div>
+                <div class="text-xl font-black font-['Rajdhani'] text-emerald-400 leading-tight">
+                  {{ modalData.db?.pos1 || 'ST' }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Player Details List -->
+            <div class="w-full mt-4 space-y-2 text-xs text-slate-300 divide-y divide-slate-800/60">
+              <div class="flex justify-between pt-2">
+                <span class="text-slate-500">Thể hình:</span>
+                <span class="font-bold text-slate-200">{{ modalData.db?.bodytype_name || 'Trung bình' }} ({{ modalData.db?.height }}cm / {{ modalData.db?.weight }}kg)</span>
+              </div>
+              <div class="flex justify-between pt-2">
+                <span class="text-slate-500">Chân thuận:</span>
+                <span class="font-bold text-slate-200">
+                  {{ modalData.db?.foot_pref === 'right' ? 'Phải' : 'Trái' }} (Trái {{ modalData.db?.foot_left || 5 }} - Phải {{ modalData.db?.foot_right || 5 }})
+                </span>
+              </div>
+              <div class="flex justify-between pt-2">
+                <span class="text-slate-500">Kỹ thuật:</span>
+                <span class="font-bold text-amber-400">{{ '★'.repeat(parseInt(modalData.db?.skill_level || 1)) }}</span>
+              </div>
+              <div class="flex justify-between pt-2" v-if="modalData.db?.team_name">
+                <span class="text-slate-500">Câu lạc bộ:</span>
+                <span class="font-bold text-slate-200 truncate max-w-[180px]">{{ modalData.db?.team_name }}</span>
+              </div>
+            </div>
+
+            <!-- Traits List -->
+            <div v-if="modalData.traits && Object.keys(modalData.traits).length > 0" class="w-full mt-4">
+              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <i class="fa-solid fa-sparkles text-amber-400 mr-1"></i> Chỉ số ẩn:
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                <span 
+                  v-for="(t_val, t_name) in modalData.traits" 
+                  :key="t_name"
+                  class="px-2 py-0.5 bg-[#121622] text-amber-300 text-[11px] rounded border border-amber-500/20 capitalize font-medium"
+                >
+                  {{ t_name.replace(/-/g, ' ') }}
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- RIGHT COL: Stats Bars & LIVE MARKET PRICE TABLE -->
+          <div class="md:col-span-7 flex flex-col gap-6">
+            
+            <!-- 1. LIVE MARKET PRICE TABLE -->
+            <div class="bg-[#171d2b] border border-amber-500/30 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+              <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h3 class="text-base font-bold font-['Rajdhani'] flex items-center gap-2">
+                  <i class="fa-solid fa-coins text-amber-400"></i>
+                  <span v-if="modalData.price_vn" class="text-emerald-400 font-bold">
+                    🇻🇳 BẢNG GIÁ TTCN SERVER VIỆT NAM (GARENA)
+                  </span>
+                  <span v-else class="text-amber-400 font-bold">
+                    🇰🇷 BẢNG GIÁ TTCN SERVER HÀN QUỐC (THAM CHIẾU)
+                  </span>
+                </h3>
+                <span class="text-[11px] text-slate-400 font-mono">
+                  {{ modalData.price_vn ? modalData.price_vn.source : ('Cập nhật: ' + (modalData.price?.updatetime || 'Hôm nay')) }}
+                </span>
+              </div>
+
+              <!-- Market Price Grid (+1 to +10) -->
+              <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                <div 
+                  v-for="lvl in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]" 
+                  :key="lvl"
+                  :class="getGradeColorClass(lvl)"
+                  class="p-2.5 rounded-xl border text-center transition-all flex flex-col justify-between"
+                >
+                  <div class="text-[11px] font-black font-['Rajdhani'] uppercase tracking-wider flex items-center justify-center gap-1">
+                    <span>Thẻ</span>
+                    <span class="px-1.5 py-0.2 rounded font-bold" :class="getGradeBadgeClass(lvl)">+{{ lvl }}</span>
+                  </div>
+                  <div class="text-xs font-bold font-mono mt-1.5 truncate">
+                    {{ (modalData.price_vn ? modalData.price_vn['vn' + lvl] : modalData.price?.['kr' + lvl]) || '-' }}
+                  </div>
+                  <div class="text-[9px] text-slate-400 font-medium mt-0.5">BP</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. CORE ATTRIBUTES BARS -->
+            <div class="bg-[#171d2b] border border-slate-800/80 rounded-2xl p-5">
+              <h3 class="text-sm font-bold font-['Rajdhani'] text-slate-200 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-chart-simple text-amber-400"></i>
+                BỘ CHỈ SỐ TỔNG QUAN
+              </h3>
+
+              <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                <div v-for="(val, label) in getCoreAttributes(modalData)" :key="label">
+                  <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-slate-400">{{ label }}</span>
+                    <span class="font-bold font-mono" :class="getStatColorClass(val)">{{ val }}</span>
+                  </div>
+                  <div class="w-full bg-[#121622] h-2 rounded-full overflow-hidden border border-slate-800">
+                    <div 
+                      class="h-full rounded-full transition-all duration-500" 
+                      :class="getStatBarColor(val)"
+                      :style="{ width: Math.min(100, (val / 140) * 100) + '%' }"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-[#0e121a] border-t border-slate-800/80 py-4 mt-auto">
+      <div class="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-4">
+        <div>
+          © 2026 FC Online Extractor & TTCN Tool. Dữ liệu thời gian thực được kết nối từ Garena VN, Nexon & FIFAAddict.
+        </div>
+        <div class="flex items-center gap-4">
+          <span><i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Trạng thái: Hoạt động bình thường</span>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="app.js?v=4"></script>
+</body>
+</html>

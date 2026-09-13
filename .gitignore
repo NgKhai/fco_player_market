@@ -1,0 +1,19 @@
+# Local/generated data (re-download with run.bat)
+output/
+
+# Local credentials and runtime files
+.env
+.env.*
+*.sqlite
+*.sqlite3
+*.db
+*.log
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local IDE/OS files
+.vscode/
+.idea/
+Thumbs.db

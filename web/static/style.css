@@ -1,0 +1,65 @@
+﻿[v-cloak] {
+  display: none;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0b0e14;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e2638;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #f59e0b;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.fco-card {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.builder-pitch {
+  background: linear-gradient(90deg, rgba(25, 85, 58, .22), rgba(8, 35, 30, .42)), #0c171b;
+  min-height: 620px;
+}
+.formation-toggle { background: #a87900; border: 1px solid #d9a514; }
+.formation-backdrop { background: rgba(0, 0, 0, .72); }
+.formation-picker { max-height: min(90vh, 720px); overflow-y: auto; background: rgba(4, 7, 6, .98); border: 1px solid rgba(245, 185, 35, .35); }
+.formation-group-title { color: #f5d56a; }
+.formation-option { color: #d7d9d5; border: 1px dashed rgba(148, 163, 184, .25); background: rgba(15, 23, 20, .72); }
+.formation-option:hover, .formation-active { color: #fff8d6; background: #a87900; border-color: #d9a514; }
+.pitch-lines {
+  opacity: .55;
+  background:
+    linear-gradient(90deg, transparent 49.8%, rgba(196, 225, 210, .35) 50%, transparent 50.2%),
+    radial-gradient(circle at 50% 50%, transparent 0 12%, rgba(196, 225, 210, .3) 12.2% 12.4%, transparent 12.6%),
+    linear-gradient(90deg, transparent 8%, rgba(196, 225, 210, .3) 8.2% 8.4%, transparent 8.6% 91.4%, rgba(196, 225, 210, .3) 91.6% 91.8%, transparent 92%),
+    linear-gradient(0deg, transparent 8%, rgba(196, 225, 210, .3) 8.2% 8.4%, transparent 8.6% 91.4%, rgba(196, 225, 210, .3) 91.6% 91.8%, transparent 92%);
+}
+.builder-slot { z-index: 2; }
+.builder-player-card img { filter: drop-shadow(0 6px 8px rgba(0,0,0,.45)); }
+@media (max-width: 640px) {
+  .builder-pitch, .builder-panel { min-height: 560px; }
+  .builder-pitch { min-height: 620px; }
+}
