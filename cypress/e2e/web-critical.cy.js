@@ -46,6 +46,32 @@ describe('FC Online web critical flows', () => {
     cy.contains('Chi tiết cầu thủ & Bảng giá Live').should('not.exist');
   });
 
+  it('does not send a non-numeric player id as spid', () => {
+    cy.intercept('GET', '**/api/players/search*', {
+      statusCode: 200,
+      body: { status: 'success', total: 1, data: [{ id: 'ymkrrndrw', uid: 'ymkrrndrw', name: 'Test Player', pos: 'ST', pos1: 'ST' }] },
+    }).as('stringPlayerSearch');
+    cy.intercept('GET', '**/api/players/detail*', (request) => {
+      expect(request.query).not.to.have.property('spid');
+      request.reply({ statusCode: 200, body: { status: 'success', data: { db: { name: 'Test Player' }, price: {}, traits: {} } } });
+    }).as('stringPlayerDetail');
+    cy.visit('/?builder=1');
+    cy.wait('@stringPlayerSearch');
+    cy.get('.fco-card').first().click();
+    cy.wait('@stringPlayerDetail');
+    cy.contains('Test Player').should('be.visible');
+  });
+
+  it('shows a clear error when player details are not found', () => {
+    cy.intercept('GET', '**/api/players/detail*', {
+      statusCode: 404,
+      body: { status: 'error', message: 'Player not found', data: null }
+    }).as('playerDetail');
+    cy.get('.fco-card').first().click();
+    cy.wait('@playerDetail');
+    cy.contains('.fixed.inset-0', 'Player not found').should('be.visible');
+  });
+
   it('uses the local database as the data source', () => {
     cy.contains('DATABASE LOCAL').should('be.visible');
     cy.contains('button', 'Đăng Nhập Garena VN').should('not.exist');

@@ -29,6 +29,10 @@ class PlayerController extends Controller
         $data = $request->validated();
         $player = $action->execute($data['uid'] ?? null, isset($data['spid']) ? (int) $data['spid'] : null);
 
+        if ($player === null) {
+            return response()->json(['status' => 'error', 'message' => 'Player not found', 'data' => null], 404);
+        }
+
         return response()->json(['status' => 'success', 'data' => $player]);
     }
 }

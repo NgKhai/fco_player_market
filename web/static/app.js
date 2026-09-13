@@ -1,5 +1,52 @@
 ﻿const { createApp } = Vue;
 
+const FORMATION_LINES = {
+  '3-1-2-1-3': [['CB', 'CB', 'CB'], ['CDM'], ['LM', 'RM'], ['CAM'], ['LW', 'ST', 'RW']],
+  '3-1-4-2': [['CB', 'CB', 'CB'], ['CDM'], ['LM', 'CM', 'CM', 'RM'], ['ST', 'ST']],
+  '3-2-1-2': [['CB', 'CB', 'CB'], ['CDM', 'CDM'], ['LM', 'RM'], ['CAM'], ['ST', 'ST']],
+  '3-2-3-2': [['CB', 'CB', 'CB'], ['CDM', 'CDM'], ['LM', 'CAM', 'RM'], ['ST', 'ST']],
+  '3-4-1-2': [['CB', 'CB', 'CB'], ['LM', 'CM', 'CM', 'RM'], ['CAM'], ['ST', 'ST']],
+  '3-4-3': [['CB', 'CB', 'CB'], ['LM', 'CM', 'CM', 'RM'], ['LW', 'ST', 'RW']],
+  '3-4-3F': [['CB', 'CB', 'CB'], ['LM', 'CM', 'CM', 'RM'], ['LW', 'ST', 'RW']],
+  '4-1-2-1-2': [['LB', 'CB', 'CB', 'RB'], ['CDM'], ['LM', 'RM'], ['CAM'], ['ST', 'ST']],
+  '4-1-2-1-2-C': [['LB', 'CB', 'CB', 'RB'], ['CDM'], ['LM', 'RM'], ['CAM'], ['ST', 'ST']],
+  '4-1-2-3': [['LB', 'CB', 'CB', 'RB'], ['CDM'], ['CM', 'CM'], ['LW', 'ST', 'RW']],
+  '4-1-2-3-F': [['LB', 'CB', 'CB', 'RB'], ['CDM'], ['CM', 'CM'], ['LW', 'ST', 'RW']],
+  '4-1-3-2': [['LB', 'CB', 'CB', 'RB'], ['CDM'], ['LM', 'CM', 'RM'], ['ST', 'ST']],
+  '4-1-4-1': [['LB', 'CB', 'CB', 'RB'], ['CDM'], ['LM', 'CM', 'CM', 'RM'], ['ST']],
+  '4-2-1-3': [['LB', 'CB', 'CB', 'RB'], ['CDM', 'CDM'], ['CAM'], ['LW', 'ST', 'RW']],
+  '4-2-1-3-A': [['LB', 'CB', 'CB', 'RB'], ['CDM', 'CDM'], ['CAM'], ['LW', 'ST', 'RW']],
+  '4-2-1-3-D': [['LB', 'CB', 'CB', 'RB'], ['CDM', 'CDM'], ['CAM'], ['LW', 'ST', 'RW']],
+  '4-2-2-1-1': [['LB', 'CB', 'CB', 'RB'], ['CDM', 'CDM'], ['LM', 'RM'], ['CAM'], ['ST']],
+  '4-2-2-2': [['LB', 'CB', 'CB', 'RB'], ['CDM', 'CDM'], ['LM', 'RM'], ['ST', 'ST']],
+  '4-2-2-2A': [['LB', 'CB', 'CB', 'RB'], ['CDM', 'CDM'], ['LM', 'RM'], ['ST', 'ST']],
+  '4-2-3-1': [['LB', 'CB', 'CB', 'RB'], ['CDM', 'CDM'], ['CAM', 'CAM', 'CAM'], ['ST']],
+  '4-2-4': [['LB', 'CB', 'CB', 'RB'], ['CDM', 'CDM'], ['LW', 'ST', 'ST', 'RW']],
+  '4-3-1-2': [['LB', 'CB', 'CB', 'RB'], ['CM', 'CM', 'CM'], ['CAM'], ['ST', 'ST']],
+  '4-3-2-1': [['LB', 'CB', 'CB', 'RB'], ['CM', 'CM', 'CM'], ['CAM', 'CAM'], ['ST']],
+  '4-3-3': [['LB', 'CB', 'CB', 'RB'], ['CM', 'CM', 'CM'], ['LW', 'ST', 'RW']],
+  '4-3-3F': [['LB', 'CB', 'CB', 'RB'], ['CM', 'CM', 'CM'], ['LW', 'ST', 'RW']],
+  '4-4-1-1': [['LB', 'CB', 'CB', 'RB'], ['LM', 'CM', 'CM', 'RM'], ['CAM'], ['ST']],
+  '4-4-2': [['LB', 'CB', 'CB', 'RB'], ['LM', 'CM', 'CM', 'RM'], ['ST', 'ST']],
+  '4-4-2F': [['LB', 'CB', 'CB', 'RB'], ['LM', 'CM', 'CM', 'RM'], ['ST', 'ST']],
+  '4-5-1': [['LB', 'CB', 'CB', 'RB'], ['LM', 'CM', 'CAM', 'CM', 'RM'], ['ST']],
+  '5-1-2-1-1': [['LB', 'CB', 'CB', 'CB', 'RB'], ['CDM'], ['LM', 'RM'], ['CAM'], ['ST']],
+  '5-2-1-2': [['LB', 'CB', 'CB', 'CB', 'RB'], ['CDM', 'CDM'], ['CAM'], ['ST', 'ST']],
+  '5-2-3': [['LB', 'CB', 'CB', 'CB', 'RB'], ['CDM', 'CDM'], ['LW', 'ST', 'RW']],
+  '5-3-2': [['LB', 'CB', 'CB', 'CB', 'RB'], ['CM', 'CM', 'CM'], ['ST', 'ST']],
+  '5-4-1': [['LB', 'CB', 'CB', 'CB', 'RB'], ['LM', 'CM', 'CM', 'RM'], ['ST']]
+};
+
+const createFormationSlots = (lines) => [
+  ['GK', 50, 88],
+  ...lines.flatMap((row, line) => row.map((position, index) => {
+    const width = row.length === 1 ? 0 : Math.min(76, 18 + (row.length - 1) * 18);
+    const x = 50 + (index - (row.length - 1) / 2) * (width / Math.max(1, row.length - 1));
+    const y = lines.length === 1 ? 40 : 72 - line * (56 / (lines.length - 1));
+    return [position, x, y];
+  }))
+];
+
 createApp({
   data() {
     return {
@@ -17,36 +64,19 @@ createApp({
       formationPickerOpen: false,
       playerPickerOpen: false,
       builderAssignments: {},
+      savedSquads: [],
+      activeSquadId: null,
+      squadName: '',
       formationGroups: [
         { title: '3 HẬU VỆ', items: ['3-1-2-1-3', '3-1-4-2', '3-2-1-2', '3-2-3-2', '3-4-1-2', '3-4-3', '3-4-3F'] },
         { title: '4 HẬU VỆ', items: ['4-1-2-1-2', '4-1-2-1-2-C', '4-1-2-3', '4-1-2-3-F', '4-1-3-2', '4-1-4-1', '4-2-1-3', '4-2-1-3-A', '4-2-1-3-D', '4-2-2-1-1', '4-2-2-2', '4-2-2-2A', '4-2-3-1', '4-2-4', '4-3-1-2', '4-3-2-1', '4-3-3', '4-3-3F', '4-4-1-1', '4-4-2', '4-4-2F', '4-5-1'] },
         { title: '5 HẬU VỆ', items: ['5-1-2-1-1', '5-2-1-2', '5-2-3', '5-3-2', '5-4-1'] }
       ],
-      formations: {
-        '4-3-3': [
-          ['GK', 50, 88], ['LB', 12, 70], ['CB', 34, 73], ['CB', 66, 73], ['RB', 88, 70],
-          ['CM', 25, 48], ['CM', 50, 51], ['CM', 75, 48], ['LW', 25, 24], ['ST', 50, 17], ['RW', 75, 24]
-        ],
-        '4-2-3-1': [
-          ['GK', 50, 88], ['LB', 12, 70], ['CB', 34, 73], ['CB', 66, 73], ['RB', 88, 70],
-          ['CDM', 25, 52], ['CDM', 75, 52], ['CAM', 27, 30], ['CAM', 50, 40], ['CAM', 73, 30], ['ST', 50, 17]
-        ],
-        '4-4-2': [
-          ['GK', 50, 88], ['LB', 12, 70], ['CB', 34, 73], ['CB', 66, 73], ['RB', 88, 70],
-          ['LM', 15, 45], ['CM', 38, 49], ['CM', 62, 49], ['RM', 85, 45], ['ST', 38, 20], ['ST', 62, 20]
-        ],
-        '3-5-2': [
-          ['GK', 50, 88], ['CB', 25, 72], ['CB', 50, 75], ['CB', 75, 72], ['CDM', 35, 52], ['CDM', 65, 52],
-          ['LM', 12, 35], ['CAM', 50, 38], ['RM', 88, 35], ['ST', 38, 17], ['ST', 62, 17]
-        ],
-        '5-3-2': [
-          ['GK', 50, 88], ['LB', 10, 70], ['CB', 30, 73], ['CB', 50, 75], ['CB', 70, 73], ['RB', 90, 70],
-          ['CM', 25, 48], ['CM', 50, 51], ['CM', 75, 48], ['ST', 38, 18], ['ST', 62, 18]
-        ]
-      },
+      formations: Object.fromEntries(Object.entries(FORMATION_LINES).map(([id, lines]) => [id, createFormationSlots(lines)])),
       loading: false,
       selectedPlayerDetail: null,
       modalData: {},
+      playerDetailError: '',
       showTokenModal: false,
       authTab: 'login',
       loginUsername: '',
@@ -105,7 +135,7 @@ createApp({
     builderSlots() {
       return this.formationFor(this.builderFormationId).map((slot, index) => ({
         id: `${this.builderFormationId}-${index}`,
-        position: slot[0], x: slot[1], y: slot[2]
+        position: slot[0], x: slot[1], y: slot[0] === 'GK' ? 78 : slot[2]
       }));
     },
     builderPlayers() {
@@ -157,28 +187,7 @@ createApp({
       return Number(player.pos1val || player.attrB || player.ovr || 0);
     },
     formationFor(id) {
-      if (this.formations[id]) return this.formations[id];
-      const parts = id.replace(/[A-Z]+$/, '').replace(/-$/, '').split('-').map(Number);
-      if (parts.some(Number.isNaN) || parts.length < 2) return this.formations['4-3-3'];
-      const positions = (count, line, last) => {
-        if (line === 0) return count === 3 ? ['CB', 'CB', 'CB'] : count === 5 ? ['LB', 'CB', 'CB', 'CB', 'RB'] : ['LB', 'CB', 'CB', 'RB'];
-        if (last) return count === 1 ? ['ST'] : count === 2 ? ['ST', 'ST'] : count === 3 ? ['LW', 'ST', 'RW'] : ['LW', 'CF', 'CF', 'RW'];
-        if (count === 1) return ['CAM'];
-        if (count === 2) return ['CDM', 'CDM'];
-        if (count === 3) return ['LM', 'CM', 'RM'];
-        return count === 5 ? ['LM', 'CM', 'CAM', 'CM', 'RM'] : ['LM', 'CM', 'CM', 'RM'];
-      };
-      const slots = [['GK', 50, 88]];
-      const rows = parts.slice(0, -1);
-      rows.forEach((count, line) => {
-        const row = positions(count, line, false);
-        const y = 72 - line * (40 / Math.max(1, rows.length - 1));
-        const spread = Math.min(80, 20 * (row.length - 1));
-        row.forEach((position, index) => slots.push([position, 50 + (index - (row.length - 1) / 2) * (spread / Math.max(1, row.length - 1)), y]));
-      });
-      const attack = positions(parts[parts.length - 1], parts.length - 1, true);
-      attack.forEach((position, index) => slots.push([position, 50 + (index - (attack.length - 1) / 2) * (80 / Math.max(1, attack.length - 1)), 16]));
-      return slots;
+      return this.formations[id] || this.formations['4-3-3'];
     },
     async checkGarenaStatus() {
       try {
@@ -352,25 +361,104 @@ createApp({
       this.persistSquad();
     },
     persistSquad() {
-      localStorage.setItem('fco-squad', JSON.stringify({
+      const name = this.squadName.trim() || `Đội hình ${this.savedSquads.length + 1}`;
+      const squad = {
+        id: this.activeSquadId || `squad-${Date.now()}`,
+        name,
         formation: this.builderFormationId,
-        assignments: this.builderAssignments,
-      }));
+        assignments: this.builderAssignments
+      };
+      const index = this.savedSquads.findIndex((saved) => saved.id === squad.id);
+      this.savedSquads = index >= 0
+        ? this.savedSquads.map((saved, savedIndex) => savedIndex === index ? squad : saved)
+        : [...this.savedSquads, squad];
+      this.activeSquadId = squad.id;
+      this.squadName = squad.name;
+      localStorage.setItem('fco-squads', JSON.stringify({ version: 1, activeId: squad.id, squads: this.savedSquads }));
+      localStorage.setItem('fco-squad', JSON.stringify({ formation: squad.formation, assignments: squad.assignments }));
+    },
+    saveNewSquad() {
+      this.activeSquadId = null;
+      this.persistSquad();
+    },
+    isValidFormation(id) {
+      return Object.prototype.hasOwnProperty.call(this.formations, id);
+    },
+    restoreSquad(saved) {
+      const formation = this.isValidFormation(saved.formation) ? saved.formation : '4-3-3';
+      const source = saved.assignments && typeof saved.assignments === 'object' ? saved.assignments : {};
+      const restored = {};
+      const used = new Set();
+      const playerKey = (player) => String(player.uid || player.spid || player.id);
+
+      this.builderFormationId = formation;
+      this.builderAssignments = {};
+      this.builderSlots.forEach((slot) => {
+        const player = source[slot.id];
+        if (player) {
+          restored[slot.id] = player;
+          used.add(playerKey(player));
+        }
+      });
+      this.builderSlots.forEach((slot) => {
+        if (restored[slot.id]) return;
+        const entry = Object.values(source).find((player) => player && !used.has(playerKey(player)) && this.getPlayerPositions(player).includes(slot.position));
+        if (entry) {
+          restored[slot.id] = entry;
+          used.add(playerKey(entry));
+        }
+      });
+      this.builderAssignments = restored;
     },
     loadSavedSquad() {
       try {
+        const collection = JSON.parse(localStorage.getItem('fco-squads') || 'null');
+        const squads = Array.isArray(collection) ? collection : collection?.squads;
+        if (Array.isArray(squads) && squads.length) {
+          this.savedSquads = squads.filter((squad) => squad && squad.id && squad.name);
+          const saved = this.savedSquads.find((squad) => squad.id === collection.activeId) || this.savedSquads[0];
+          this.activeSquadId = saved.id;
+          this.squadName = saved.name;
+          this.restoreSquad(saved);
+          return;
+        }
+
         const saved = JSON.parse(localStorage.getItem('fco-squad') || 'null');
-        if (!saved || !this.formations[saved.formation] || !saved.assignments) return;
-        this.builderFormationId = saved.formation;
-        this.builderAssignments = saved.assignments;
+        if (saved) this.restoreSquad(saved);
       } catch (_) {
+        this.savedSquads = [];
+        this.activeSquadId = null;
+        this.squadName = '';
+      }
+    },
+    selectSavedSquad(id) {
+      const saved = this.savedSquads.find((squad) => squad.id === id);
+      if (!saved) return;
+      this.activeSquadId = saved.id;
+      this.squadName = saved.name;
+      this.restoreSquad(saved);
+      this.persistSquad();
+    },
+    deleteSavedSquad() {
+      const index = this.savedSquads.findIndex((squad) => squad.id === this.activeSquadId);
+      if (index < 0) return;
+      this.savedSquads.splice(index, 1);
+      if (this.savedSquads.length) {
+        this.selectSavedSquad(this.savedSquads[Math.min(index, this.savedSquads.length - 1)].id);
+      } else {
+        this.activeSquadId = null;
+        this.squadName = '';
+        this.builderFormationId = '4-3-3';
+        this.builderAssignments = {};
+        localStorage.removeItem('fco-squads');
         localStorage.removeItem('fco-squad');
       }
     },
     clearBuilder() {
       this.builderAssignments = {};
       this.selectedSlotId = null;
-      localStorage.removeItem('fco-squad');
+      if (this.activeSquadId) this.persistSquad();
+      else localStorage.removeItem('fco-squad');
     },
     async handleSearch() {
       const q = this.searchQuery.trim();
@@ -402,17 +490,23 @@ createApp({
     },
     async openPlayerDetail(player) {
       this.selectedPlayerDetail = player;
+      this.playerDetailError = '';
       this.modalData = { db: player, price: {}, traits: {} };
       
       try {
         const spidParam = player.id || player.spid || '';
-        const res = await fetch(`/api/players/detail?uid=${encodeURIComponent(player.uid)}&spid=${encodeURIComponent(spidParam)}`);
+        const query = new URLSearchParams({ uid: player.uid || '' });
+        if (/^\d+$/.test(String(spidParam))) query.set('spid', String(spidParam));
+        const res = await fetch(`/api/players/detail?${query.toString()}`);
         const json = await res.json();
-        if (json.status === 'success' && json.data) {
-          this.modalData = json.data;
+        if (!res.ok || json.status !== 'success' || !json.data) {
+          this.playerDetailError = json.message || 'Không tìm thấy cầu thủ.';
+          return;
         }
+        this.modalData = json.data;
       } catch (err) {
         console.error('Detail fetch error:', err);
+        this.playerDetailError = 'Không thể tải thông tin cầu thủ.';
       }
     },
     getMinifaceUrl(player) {

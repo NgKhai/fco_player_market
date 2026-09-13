@@ -20,6 +20,16 @@ describe('Squad Builder', () => {
     cy.get('.formation-backdrop').should('have.css', 'background-color', 'rgba(0, 0, 0, 0.72)');
   });
 
+  it('renders the explicit positions for 4-1-2-1-2', () => {
+    cy.contains('button', 'FORMATIONS').click();
+    cy.contains('button.formation-option', '4-1-2-1-2').click();
+    cy.get('.builder-empty span').then(($positions) => {
+      expect([...$positions].map((position) => position.textContent.trim())).to.deep.equal([
+        'GK', 'LB', 'CB', 'CB', 'RB', 'CDM', 'LM', 'RM', 'CAM', 'ST', 'ST'
+      ]);
+    });
+  });
+
   it('suggests only goalkeepers for the GK slot', () => {
     cy.get('button.builder-empty').first().click();
     cy.contains('h2', 'CHỌN CẦU THỦ · GK').should('be.visible');
@@ -42,6 +52,30 @@ describe('Squad Builder', () => {
     cy.get('.builder-player-card').should('have.length', 1);
   });
 
+  it('restores every picker formation after reload', () => {
+    cy.contains('button', 'FORMATIONS').click();
+    cy.contains('button.formation-option', '4-1-2-1-2').click();
+    cy.get('button.builder-empty').first().click();
+    cy.get('.player-picker button').eq(1).click();
+    cy.reload();
+    cy.contains('button', 'FORMATIONS 4-1-2-1-2').should('be.visible');
+    cy.get('button.builder-empty').should('have.length', 10);
+    cy.get('.builder-player-card').should('have.length', 1);
+  });
+
+  it('saves, selects, and deletes named squads locally', () => {
+    cy.get('input[aria-label="Tên squad"]').type('GK Squad');
+    cy.contains('button', 'Lưu đội hình').click();
+    cy.get('input[aria-label="Tên squad"]').clear().type('Second Squad');
+    cy.contains('button', 'Lưu squad mới').click();
+    cy.get('select[aria-label="Chọn squad"] option').should('have.length', 2);
+    cy.get('select[aria-label="Chọn squad"]').select('GK Squad');
+    cy.get('input[aria-label="Tên squad"]').should('have.value', 'GK Squad');
+    cy.get('button[aria-label="Xóa squad"]').click();
+    cy.get('select[aria-label="Chọn squad"] option').should('have.length', 1);
+    cy.get('select[aria-label="Chọn squad"]').should('contain', 'Second Squad');
+  });
+
   it('shows the player weak foot from the API and the salary cap', () => {
     cy.contains('.fco-card', 'Goalkeeper Test').should('contain.text', '2-5');
     cy.get('button.builder-empty').first().click();
@@ -51,5 +85,14 @@ describe('Squad Builder', () => {
 
   it('uses the local season image when available', () => {
     cy.get('img[src="/seasons/season_100.png"]').should('be.visible');
+  });
+
+  it('keeps the goalkeeper slot above the squad summary on mobile', () => {
+    cy.viewport(375, 667);
+    cy.get('button.builder-empty').first().then(($gk) => {
+      cy.get('.builder-summary').then(($summary) => {
+        expect($gk[0].getBoundingClientRect().bottom).to.be.lessThan($summary[0].getBoundingClientRect().top);
+      });
+    });
   });
 });

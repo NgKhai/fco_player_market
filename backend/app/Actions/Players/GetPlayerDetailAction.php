@@ -2,11 +2,14 @@
 
 namespace App\Actions\Players;
 
+use App\Actions\GarenaClient;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 final class GetPlayerDetailAction
 {
+    public function __construct(private readonly GarenaClient $garena) {}
+
     public function execute(?string $uid, ?int $spid): ?array
     {
         $normalizedUid = preg_replace('/^pid/i', '', (string) $uid);
@@ -47,12 +50,20 @@ final class GetPlayerDetailAction
             'foot_pref' => $row->foot_pref ?: 'right', 'team_name' => $row->team_name ?: '-',
         ];
 
-        $prices = DB::table('market_prices_vn')->where('spid', $row->spid)
-            ->orderBy('grade')->get()->mapWithKeys(fn ($price) => [(string) $price->grade => $price->price_vn])->all();
+        $prices = Schema::hasTable('market_prices_vn')
+            ? DB::table('market_prices_vn')->where('spid', $row->spid)
+                ->orderBy('grade')->get()->mapWithKeys(fn ($price) => [(string) $price->grade => $price->price_formatted ?: $price->price_vn])->all()
+            : [];
+        $livePrices = $this->garena->playerPrices((int) $row->spid);
+        $priceVn = $livePrices;
+        if ($livePrices !== null) $prices = array_combine(
+            array_map(fn (string $key): string => (string) ((int) substr($key, 2)), array_keys($livePrices)),
+            array_values($livePrices),
+        );
 
         return [
-            'db' => $db, 'price' => $prices, 'traits' => [], 'source' => 'SQLite local',
-            'garena_connected' => false, 'active_server' => 'LOCAL',
+            'db' => $db, 'price' => $prices, 'price_vn' => $priceVn, 'traits' => [], 'source' => 'SQLite local',
+            'garena_connected' => $this->garena->connected(), 'active_server' => $livePrices !== null ? 'VN' : 'LOCAL',
         ];
     }
 }

@@ -4,7 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 Route::get('/', function () {
-    return response()->file(base_path('../web/static/index.html'));
+    return response(file_get_contents(base_path('../web/static/index.html')))
+        ->header('Content-Type', 'text/html; charset=UTF-8');
 });
 
 Route::get('/app.js', function () {
