@@ -123,8 +123,8 @@ createApp({
       return Object.values(this.builderAssignments).filter(Boolean);
     },
     builderAverageOvr() {
-      const list = this.builderSquadPlayers;
-      return list.length ? Math.round(list.reduce((sum, p) => sum + Number(p.pos1val || p.attrB || p.ovr || 0), 0) / list.length) : 0;
+      const list = this.builderSlots.map(slot => ({ slot, player: this.getBuilderPlayer(slot.id) })).filter(x => x.player);
+      return list.length ? Math.round(list.reduce((sum, x) => sum + this.getBuilderOvr(x.player, x.slot.position), 0) / list.length) : 0;
     },
     builderTotalSalary() {
       return this.builderSquadPlayers.reduce((sum, p) => sum + Number(p.attrA || p.salary || 0), 0);
@@ -135,7 +135,7 @@ createApp({
     builderPositionWarnings() {
       return this.builderSlots.filter(s => {
         const p = this.builderAssignments[s.id];
-        return p && s.position !== (p.pos1 || p.pos) && s.position !== p.pos2;
+        return p && !this.getPlayerPositions(p).includes(s.position);
       }).length;
     }
   },
@@ -149,6 +149,12 @@ createApp({
       return [player?.pos1, player?.pos2, player?.pos]
         .filter(Boolean)
         .map(pos => String(pos).toUpperCase());
+    },
+    getBuilderOvr(player, position) {
+      if (!player) return 0;
+      if (String(player.pos1 || player.pos).toUpperCase() === position) return Number(player.pos1val || player.attrB || 0);
+      if (String(player.pos2 || '').toUpperCase() === position) return Number(player.pos2val || player.pos1val || player.attrB || 0);
+      return Number(player.pos1val || player.attrB || player.ovr || 0);
     },
     formationFor(id) {
       if (this.formations[id]) return this.formations[id];
@@ -324,7 +330,14 @@ createApp({
       const old = Object.values(this.builderAssignments).filter(Boolean);
       this.builderFormationId = id;
       this.builderAssignments = {};
-      this.builderSlots.forEach((slot, index) => { if (old[index]) this.builderAssignments[slot.id] = old[index]; });
+      const used = new Set();
+      this.builderSlots.forEach(slot => {
+        const index = old.findIndex((player, i) => !used.has(i) && this.getPlayerPositions(player).includes(slot.position));
+        if (index >= 0) {
+          this.builderAssignments[slot.id] = old[index];
+          used.add(index);
+        }
+      });
       this.selectedSlotId = null;
       this.persistSquad();
     },

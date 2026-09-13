@@ -1,6 +1,7 @@
 ﻿import os
 import sys
 import json
+import sqlite3
 import urllib.parse
 import urllib.request
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
@@ -85,6 +86,50 @@ def _local_players(keyword="", season=""):
                 season_ids,
             ).fetchall()
         return [_local_player(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def _fifaaddict_player(row):
+    data = json.loads(row["data_json"] or "{}")
+    return {
+        "id": row["uid"], "uid": row["uid"], "spid": None, "pid": None,
+        "name": row["name_vi"] or data.get("name") or row["uid"],
+        "year": row["season_code"], "year_short": data.get("year_short") or row["season_code"],
+        "season_full": data.get("team_name") or row["season_code"],
+        "team_name": data.get("team_name"), "season_id": int(data.get("year") or 0),
+        "pos": data.get("pos1") or data.get("pos") or "-",
+        "pos1": data.get("pos1") or data.get("pos") or "-", "pos2": data.get("pos2"),
+        "pos1val": int(data.get("pos1val") or data.get("attrB") or 0),
+        "pos2val": int(data.get("pos2val") or 0),
+        "attrA": int(data.get("attrA") or 0), "attrB": int(data.get("attrB") or 0),
+        "salary": int(data.get("attrA") or 0),
+        "foot_pref": data.get("foot_pref") or "right",
+        "foot_left": int(data.get("foot_left") or 5), "foot_right": int(data.get("foot_right") or 5),
+        "skill_level": int(data.get("skill_level") or 1), "source_uid": row["uid"],
+    }
+
+
+def _local_fifaaddict_players(keyword="", season=""):
+    conn = sqlite3.connect(SQLITE_DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        if keyword:
+            rows = conn.execute(
+                "SELECT uid, season_code, name_vi, data_json FROM fifaaddict_players "
+                "WHERE name_vi LIKE ? OR json_extract(data_json, '$.name') LIKE ? "
+                "ORDER BY name_vi, season_code LIMIT 200",
+                (f"%{keyword}%", f"%{keyword}%"),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT uid, season_code, name_vi, data_json FROM fifaaddict_players "
+                "WHERE lower(season_code) = ? ORDER BY name_vi LIMIT 200",
+                (season or "icontm",),
+            ).fetchall()
+        return [_fifaaddict_player(row) for row in rows]
+    except sqlite3.OperationalError:
+        return []
     finally:
         conn.close()
 
@@ -258,13 +303,15 @@ class FCOHandler(SimpleHTTPRequestHandler):
                 keyword = query.get("q", [""])[0].strip().strip('"').strip("'").strip()
                 season = query.get("season", [""])[0].strip().lower()
 
-                try:
-                    if keyword:
-                        players = fa_client.search_players_by_name(keyword)
-                    else:
-                        players = fa_client.get_season_players(season or "icontm")
-                except Exception:
-                    players = []
+                players = _local_fifaaddict_players(keyword, season)
+                if not players:
+                    try:
+                        if keyword:
+                            players = fa_client.search_players_by_name(keyword)
+                        else:
+                            players = fa_client.get_season_players(season or "icontm")
+                    except Exception:
+                        players = []
 
                 if not players:
                     players = _local_players(keyword, season or "icontm")
