@@ -14,7 +14,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from config import SQLITE_DB_PATH, MINIFACES_DIR
+from config import SQLITE_DB_PATH, MINIFACES_DIR, OUTPUT_DIR
 from core.db_builder import DatabaseManager
 from core.fifaaddict_client import FIFAAddictClient
 from core.garena_vn_client import GarenaVNClient
@@ -183,6 +183,21 @@ class FCOHandler(SimpleHTTPRequestHandler):
         # ----------------- API ROUTES -----------------
         if path.startswith("/api/"):
             self.handle_api(path, query)
+            return
+
+        if path.startswith("/seasons/"):
+            filename = urllib.parse.unquote(path.removeprefix("/seasons/"))
+            if filename.startswith("season_") and filename.endswith(".png") and filename[7:-4].isdigit():
+                full_path = os.path.join(OUTPUT_DIR, "seasons", filename)
+                if os.path.isfile(full_path):
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/png")
+                    self.send_header("Cache-Control", "max-age=86400")
+                    self.end_headers()
+                    with open(full_path, "rb") as f:
+                        self.wfile.write(f.read())
+                    return
+            self.send_error(404, "Season image not found")
             return
 
         # ----------------- MINIFACE ASSETS ROUTE -----------------

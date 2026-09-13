@@ -44,8 +44,8 @@
   min-height: 620px;
 }
 .formation-toggle { background: #a87900; border: 1px solid #d9a514; }
-.formation-backdrop { background: rgba(0, 0, 0, .72); }
-.formation-picker { max-height: min(90vh, 720px); overflow-y: auto; background: rgba(4, 7, 6, .98); border: 1px solid rgba(245, 185, 35, .35); }
+.formation-backdrop { position: fixed; inset: 0; z-index: 1000; background-color: rgba(0, 0, 0, .72) !important; }
+.formation-picker { position: relative; z-index: 1001; max-height: min(90vh, 720px); overflow-y: auto; background: rgba(4, 7, 6, .98); border: 1px solid rgba(245, 185, 35, .35); }
 .formation-group-title { color: #f5d56a; }
 .formation-option { color: #d7d9d5; border: 1px dashed rgba(148, 163, 184, .25); background: rgba(15, 23, 20, .72); }
 .formation-option:hover, .formation-active { color: #fff8d6; background: #a87900; border-color: #d9a514; }

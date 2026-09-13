@@ -6,8 +6,8 @@ describe('Squad Builder', () => {
         status: 'success',
         total: 2,
         data: [
-          { id: 1001, spid: 1001, uid: '1', name: 'Goalkeeper Test', pos: 'GK', pos1: 'GK', attrA: 8, attrB: 90 },
-          { id: 1002, spid: 1002, uid: '2', name: 'Striker Test', pos: 'ST', pos1: 'ST', attrA: 10, attrB: 95 }
+          { id: 1001, spid: 1001, uid: '1', name: 'Goalkeeper Test', pos: 'GK', pos1: 'GK', attrA: 8, attrB: 90, foot_left: 2, foot_right: 5, season_id: 100 },
+          { id: 1002, spid: 1002, uid: '2', name: 'Striker Test', pos: 'ST', pos1: 'ST', attrA: 10, attrB: 95, foot_left: 4, foot_right: 5, season_id: 100 }
         ]
       }
     }).as('playerSearch');
@@ -18,6 +18,7 @@ describe('Squad Builder', () => {
   it('opens the formation picker', () => {
     cy.contains('button', 'FORMATIONS').click();
     cy.contains('button', '4-4-2').should('be.visible');
+    cy.get('.formation-backdrop').should('have.css', 'background-color', 'rgba(0, 0, 0, 0.72)');
   });
 
   it('suggests only goalkeepers for the GK slot', () => {
@@ -33,5 +34,16 @@ describe('Squad Builder', () => {
     cy.get('.player-picker button').eq(1).click();
     cy.reload();
     cy.get('.builder-player-card').should('have.length', 1);
+  });
+
+  it('shows the player weak foot from the API and the salary cap', () => {
+    cy.contains('.fco-card', 'Goalkeeper Test').should('contain.text', '2-5');
+    cy.get('button.builder-empty').first().click();
+    cy.get('.player-picker button').eq(1).click();
+    cy.contains('Lương').should('contain.text', '/ 305');
+  });
+
+  it('uses the local season image when available', () => {
+    cy.get('img[src="/seasons/season_100.png"]').should('be.visible');
   });
 });

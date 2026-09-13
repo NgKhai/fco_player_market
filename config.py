@@ -14,7 +14,10 @@ JSON_DB_PATH = os.path.join(DATABASE_DIR, "players_db.json")
 SEASONS_JSON_PATH = os.path.join(DATABASE_DIR, "seasons.json")
 
 # Game Directory (Read-Only)
-GAME_DIR = r"C:\Garena\Games\32837"
+GAME_DIR = r"C:\FCOnline\32837"
+GAME_DATA_DIR = os.path.join(GAME_DIR, "data")
+GAME_DB_PATH = os.path.join(GAME_DATA_DIR, "db", "fo4_ng_db.dat")
+GAME_VI_ARCHIVE_PATH = os.path.join(GAME_DATA_DIR, "vie_vn.big")
 
 # Nexon Open API Endpoints
 NEXON_META_BASE = "https://open.api.nexon.com/static/fconline/meta"

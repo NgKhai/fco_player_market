@@ -94,7 +94,34 @@ class DatabaseManager:
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_player_ovr ON players(ovr)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_price_vn_spid ON market_prices_vn(spid)")
 
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS fifaaddict_players (
+                uid TEXT PRIMARY KEY,
+                season_code TEXT NOT NULL,
+                name_vi TEXT,
+                data_json TEXT NOT NULL,
+                updated_at INTEGER NOT NULL
+            )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_fifaaddict_name ON fifaaddict_players(name_vi)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_fifaaddict_season ON fifaaddict_players(season_code)")
+
             conn.commit()
+
+    def save_fifaaddict_players(self, season_code, players):
+        now = int(time.time())
+        records = []
+        for player in players:
+            uid = str(player.get("uid", "")).strip()
+            if uid:
+                records.append((uid, season_code, player.get("name"), json.dumps(player, ensure_ascii=False), now))
+        with self.get_connection() as conn:
+            conn.executemany("""
+            INSERT OR REPLACE INTO fifaaddict_players (uid, season_code, name_vi, data_json, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            """, records)
+            conn.commit()
+        return len(records)
 
     def set_setting(self, key, value):
         with self.get_connection() as conn:

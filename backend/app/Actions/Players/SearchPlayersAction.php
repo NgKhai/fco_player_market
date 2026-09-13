@@ -4,11 +4,39 @@ namespace App\Actions\Players;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 final class SearchPlayersAction
 {
     public function execute(string $keyword, string $season): Collection
     {
+        if (Schema::hasTable('fifaaddict_players')) {
+            $imported = DB::table('fifaaddict_players')
+                ->select('uid', 'season_code', 'name_vi', 'data_json')
+                ->when($keyword !== '', fn ($q) => $q->where('name_vi', 'like', "%{$keyword}%"))
+                ->when($keyword === '', fn ($q) => $q->where('season_code', $season))
+                ->orderBy('name_vi')->limit(200)->get()
+                ->map(function ($row) {
+                    $data = json_decode($row->data_json, true) ?: [];
+                    return [
+                        'id' => $row->uid, 'uid' => $row->uid, 'spid' => null, 'pid' => null,
+                        'name' => $row->name_vi ?: ($data['name'] ?? $row->uid),
+                        'year' => $row->season_code, 'year_short' => $row->season_code,
+                        'season_id' => (int) ($data['year'] ?? 0),
+                        'pos' => $data['pos1'] ?? '-', 'pos1' => $data['pos1'] ?? '-',
+                        'pos2' => $data['pos2'] ?? null, 'attrA' => (int) ($data['salary'] ?? 0),
+                        'attrB' => (int) ($data['current_ovr'] ?? $data['pos1val'] ?? 0),
+                        'salary' => (int) ($data['salary'] ?? 0),
+                        'foot_pref' => $data['foot_pref'] ?? 'right',
+                        'foot_left' => (int) ($data['foot_left'] ?? 5),
+                        'foot_right' => (int) ($data['foot_right'] ?? 5),
+                        'skill_level' => (int) ($data['skill_level'] ?? 1),
+                        'source_uid' => $row->uid,
+                    ];
+                });
+            if ($imported->isNotEmpty()) return $imported;
+        }
+
         $query = DB::table('players as p')
             ->leftJoin('seasons as s', 's.season_id', '=', 'p.season_id')
             ->select(

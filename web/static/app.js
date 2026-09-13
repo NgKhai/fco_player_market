@@ -53,6 +53,7 @@ createApp({
       loginLoading: false,
       authMessage: '',
       authMessageType: '',
+      seasonImageErrors: {},
       garenaConnected: false,
       garenaTokenInput: '',
       popularSeasons: [
@@ -79,11 +80,8 @@ createApp({
       let list = [...this.players];
 
       if (this.selectedPosition !== 'ALL') {
-        list = list.filter(p => {
-          const pos = (p.pos1 || p.pos || '').toUpperCase();
-          const pos2 = (p.pos2 || '').toUpperCase();
-          return pos === this.selectedPosition || pos2 === this.selectedPosition;
-        });
+        const hasPositionData = list.some(p => this.getPlayerPositions(p).length);
+        if (hasPositionData) list = list.filter(p => this.getPlayerPositions(p).includes(this.selectedPosition));
       }
 
       list.sort((a, b) => {
@@ -112,9 +110,11 @@ createApp({
     builderPlayers() {
       const q = this.builderSearch.trim().toLowerCase();
       const position = this.builderSlots.find(s => s.id === this.selectedSlotId)?.position;
-      return (this.builderResults.length ? this.builderResults : this.players)
+      const candidates = this.builderResults.length ? this.builderResults : this.players;
+      const hasPositionData = candidates.some(p => this.getPlayerPositions(p).length);
+      return candidates
         .filter(p => !q || (p.name || '').toLowerCase().includes(q) || String(p.spid || p.id || '').includes(q))
-        .filter(p => !position || [p.pos1, p.pos2, p.pos].some(pos => String(pos || '').toUpperCase() === position))
+        .filter(p => !position || !hasPositionData || this.getPlayerPositions(p).includes(position))
         .filter((p, i, list) => list.findIndex(x => String(x.uid || x.spid || x.id) === String(p.uid || p.spid || p.id)) === i)
         .slice(0, 30);
     },
@@ -127,6 +127,9 @@ createApp({
     },
     builderTotalSalary() {
       return this.builderSquadPlayers.reduce((sum, p) => sum + Number(p.attrA || p.salary || 0), 0);
+    },
+    builderSalaryExceeded() {
+      return this.builderTotalSalary > 305;
     },
     builderPositionWarnings() {
       return this.builderSlots.filter(s => {
@@ -141,6 +144,11 @@ createApp({
     this.fetchPlayersBySeason('icontm');
   },
   methods: {
+    getPlayerPositions(player) {
+      return [player?.pos1, player?.pos2, player?.pos]
+        .filter(Boolean)
+        .map(pos => String(pos).toUpperCase());
+    },
     formationFor(id) {
       if (this.formations[id]) return this.formations[id];
       const parts = id.replace(/[A-Z]+$/, '').replace(/-$/, '').split('-').map(Number);
@@ -378,10 +386,23 @@ createApp({
     },
     getMinifaceUrl(player) {
       if (!player) return '';
-      if (player.id || player.spid) {
-        return `/minifaces/action/p${player.spid || player.id}.png`;
+      const identifier = player.spid || player.id;
+      if (identifier && /^\d+$/.test(String(identifier))) {
+        return `/minifaces/action/p${identifier}.png`;
+      }
+      if (player.source_uid || player.uid) {
+        return `/minifaces/fifaaddict/${encodeURIComponent(player.source_uid || player.uid)}.png`;
       }
       return '';
+    },
+    getSeasonImageUrl(player) {
+      const seasonId = Number(player && player.season_id);
+      const key = String(seasonId);
+      return seasonId > 0 && !this.seasonImageErrors[key] ? `/seasons/season_${seasonId}.png` : '';
+    },
+    markSeasonImageError(player) {
+      const seasonId = Number(player && player.season_id);
+      if (seasonId > 0) this.seasonImageErrors[String(seasonId)] = true;
     },
     handleImageError(e) {
       e.target.style.visibility = 'hidden';

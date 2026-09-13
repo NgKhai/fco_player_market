@@ -140,7 +140,7 @@
             <div class="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#0b0e14]/85 border border-slate-700 px-3 py-2 text-xs">
               <span>Đã chọn <b class="text-amber-400">{{ builderSquadPlayers.length }}/11</b></span>
               <span>OVR <b class="text-white">{{ builderAverageOvr || '-' }}</b></span>
-              <span>Lương <b class="text-white">{{ builderTotalSalary || '-' }}</b></span>
+              <span>Lương <b :class="builderSalaryExceeded ? 'text-rose-400' : 'text-white'">{{ builderTotalSalary }} / 305</b></span>
               <span v-if="builderPositionWarnings" class="text-rose-300"><i class="fa-solid fa-triangle-exclamation"></i> {{ builderPositionWarnings }} lệch vị trí</span>
             </div>
           </div>
@@ -262,7 +262,8 @@
 
             <!-- Season Badge -->
             <div class="text-right">
-              <span class="text-[11px] font-extrabold px-2 py-0.5 bg-slate-800 text-amber-300 rounded border border-amber-400/30 uppercase tracking-wider">
+              <img v-if="getSeasonImageUrl(p)" :src="getSeasonImageUrl(p)" alt="" class="h-8 w-8 object-contain ml-auto mb-1" @error="markSeasonImageError(p)">
+              <span v-else class="text-[11px] font-extrabold px-2 py-0.5 bg-slate-800 text-amber-300 rounded border border-amber-400/30 uppercase tracking-wider">
                 {{ p.year_short || p.year || 'FO4' }}
               </span>
               <div class="text-[10px] text-slate-400 font-bold mt-1 flex items-center justify-end gap-1">

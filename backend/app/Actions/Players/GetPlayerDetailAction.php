@@ -3,12 +3,26 @@
 namespace App\Actions\Players;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 final class GetPlayerDetailAction
 {
     public function execute(?string $uid, ?int $spid): ?array
     {
         $normalizedUid = preg_replace('/^pid/i', '', (string) $uid);
+        if ($spid === null && $normalizedUid !== '' && Schema::hasTable('fifaaddict_players')) {
+            $source = DB::table('fifaaddict_players')->where('uid', $normalizedUid)->first();
+            if ($source) {
+                $data = json_decode($source->data_json, true) ?: [];
+                return [
+                    'db' => array_merge($data, ['id' => $source->uid, 'uid' => $source->uid,
+                        'name' => $source->name_vi ?: ($data['name'] ?? $source->uid),
+                        'year_short' => $source->season_code, 'season_id' => (int) ($data['year'] ?? 0)]),
+                    'price' => $data['price'] ?? [], 'traits' => $data['traits'] ?? [],
+                    'source' => 'FIFAAddict SQLite', 'garena_connected' => false, 'active_server' => 'LOCAL',
+                ];
+            }
+        }
         $value = $spid ?: (ctype_digit($normalizedUid) ? (int) $normalizedUid : 0);
 
         $row = DB::table('players as p')

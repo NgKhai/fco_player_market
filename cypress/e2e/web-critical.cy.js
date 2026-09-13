@@ -6,9 +6,9 @@ describe('FC Online web critical flows', () => {
         status: 'success',
         total: 3,
         data: [
-          { id: 1001, spid: 1001, uid: '1', name: 'Pelé', pos: 'ST', pos1: 'ST', attrA: 10, attrB: 95 },
-          { id: 1002, spid: 1002, uid: '2', name: 'Nguyễn Văn A', pos: 'GK', pos1: 'GK', attrA: 8, attrB: 90 },
-          { id: 1003, spid: 1003, uid: '3', name: 'Lionel Messi', pos: 'RW', pos1: 'RW', attrA: 12, attrB: 94 }
+          { id: 1001, spid: 1001, uid: '1', name: 'Pelé', pos: 'ST', pos1: 'ST', attrA: 10, attrB: 95, foot_left: 4, foot_right: 5, season_id: 100 },
+          { id: 1002, spid: 1002, uid: '2', name: 'Nguyễn Văn A', pos: 'GK', pos1: 'GK', attrA: 8, attrB: 90, foot_left: 2, foot_right: 5, season_id: 100 },
+          { id: 1003, spid: 1003, uid: '3', name: 'Lionel Messi', pos: 'RW', pos1: 'RW', attrA: 12, attrB: 94, foot_left: 4, foot_right: 5, season_id: 100 }
         ]
       }
     }).as('playerSearch');
@@ -54,6 +54,23 @@ describe('FC Online web critical flows', () => {
   it('serves a local miniface asset through Laravel', () => {
     cy.request('/minifaces/action/p100000041.png')
       .its('status').should('eq', 200);
+  });
+
+  it('serves a locally downloaded FIFAAddict miniface', () => {
+    cy.request('/minifaces/fifaaddict/ymkrrndrw.png')
+      .then((response) => {
+        expect(response.status).to.eq(200);
+        expect(response.headers['content-type']).to.include('image/png');
+      });
+  });
+
+  it('renders weak foot values instead of defaulting every player to 5-5', () => {
+    cy.contains('.fco-card', 'Nguyễn Văn A').should('contain.text', '2-5');
+    cy.contains('.fco-card', 'Lionel Messi').should('contain.text', '4-5');
+  });
+
+  it('renders the salary cap format', () => {
+    cy.contains('Lương').should('contain.text', '/ 305');
   });
 
   it('changes formation and keeps the builder slot count', () => {
