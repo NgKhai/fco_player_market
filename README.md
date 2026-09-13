@@ -41,3 +41,20 @@ python main.py
 3. **🔍 Tra cứu cầu thủ:** Tìm kiếm nhanh theo tên tiếng Anh / Hàn / Việt hoặc ID.
 4. **🇻🇳 Lấy chi tiết & Giá TTCN:** Lấy toàn bộ chỉ số OVR, lương, thể hình, kỹ năng ẩn và giá TTCN từ nấc thẻ +1 đến +10.
 5. **💾 Xuất Database JSON:** Xuất toàn bộ dữ liệu sạch ra `output/database/players_db.json` phục vụ cho việc làm website hoặc API riêng.
+
+## 🧪 Chạy E2E với Cypress
+
+```bash
+npm install
+npx cypress install
+run_web.bat
+npm run test:e2e
+```
+
+Muốn mở giao diện Cypress để debug:
+
+```bash
+npm run test:e2e:open
+```
+
+Cấu hình nằm ở `cypress.config.js`, test ở `cypress/e2e/`. Server Laravel phải chạy tại `http://127.0.0.1:8000`.

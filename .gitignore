@@ -8,10 +8,15 @@ output/
 *.sqlite3
 *.db
 *.log
+cypress/screenshots/
+cypress/videos/
 
 # Python cache
 __pycache__/
 *.py[cod]
+
+# Node dependencies
+node_modules/
 
 # Local IDE/OS files
 .vscode/
